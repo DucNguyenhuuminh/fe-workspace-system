@@ -1,69 +1,38 @@
-# React + TypeScript + Vite
+# ☁️ CloudDrive - Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Đây là mã nguồn Frontend cho hệ thống **CloudDrive / Distributed Workspace System** (Lấy cảm hứng từ Google Drive). Dự án cung cấp giao diện người dùng hiện đại, mượt mà để quản lý tệp tin cá nhân và không gian làm việc nhóm.
 
-Currently, two official plugins are available:
+## 🚀 Công nghệ sử dụng (Tech Stack)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+* **Core:** [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+* **Build Tool:** [Vite](https://vitejs.dev/) (Nhanh và tối ưu hóa tốt)
+* **Styling:** [Tailwind CSS](https://tailwindcss.com/) (Utility-first CSS)
+* **Routing:** [React Router v6](https://reactrouter.com/) (Nested routing, App Shell Layout)
+* **HTTP Client:** [Axios](https://axios-http.com/) (Interceptors, xử lý JWT Token)
+* **Icons:** [Lucide React](https://lucide.dev/)
 
-## Expanding the ESLint configuration
+## ✨ Các tính năng nổi bật (Features)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* 🔐 **Xác thực người dùng:** Đăng nhập, Đăng ký, Quản lý phiên làm việc bằng JWT Token.
+* 🗂️ **My Drive (Ổ đĩa cá nhân):**
+  * Tạo, đổi tên, xóa thư mục.
+  * Duyệt cây thư mục đa cấp với thanh điều hướng (Breadcrumbs).
+  * Chuyển đổi linh hoạt giữa chế độ xem Lưới (Grid) và Danh sách (List).
+  * Trạng thái rỗng (Empty State) và Skeleton Loading tinh tế.
+* 🏢 **Workspaces (Không gian làm việc chung):**
+  * Quản lý các nhóm làm việc với thiết kế thẻ (Card) trực quan.
+  * Tạo không gian làm việc mới.
+  * Xem chi tiết tệp tin và thành viên trong từng Workspace.
+* 🎨 **UI/UX Tối ưu:**
+  * Kiến trúc App Shell (Sidebar và Header cố định).
+  * Hiệu ứng hover, transition mượt mà.
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📁 Cấu trúc thư mục (Folder Structure)
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+\`\`\`text
+src/
+├── components/       # Các component dùng chung (Layout, Modal, Navbar...)
+├── pages/            # Các trang chính (Dashboard, Login, Workspaces...)
+├── services/         # Chứa các hàm gọi API (api.ts, auth, folder, workspace)
+├── types/            # Định nghĩa các Interface TypeScript (User, Folder, Workspace)
+├── App.tsx           # File
