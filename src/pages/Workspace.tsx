@@ -1,151 +1,333 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { workspaceService } from '../services/workspace.service';
-import { Users, Plus } from 'lucide-react';
-import { type Workspace } from '../types';
+import { folderService } from '../services/folder.service';
+import { fileService } from '../services/file.service';
+import { 
+    Folder as FolderIcon, ArrowLeft, List, LayoutGrid, UserPlus, 
+    MoreVertical, Plus, ChevronRight, FileText, FileSpreadsheet, 
+    Image as ImageIcon, File as DefaultFileIcon,
+    Edit2, Trash2, Move, Download
+} from 'lucide-react';
+import { type Folder } from '../types';
 
-// Danh sách màu tự động xoay vòng cho các Workspace thật
-const colorPalette = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500'];
-
-export default function Workspaces() {
-    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-    const [loading, setLoading] = useState(true);
-    
-    // State cho Modal tạo mới
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [newWorkspaceName, setNewWorkspaceName] = useState('');
-
+export default function WorkspaceDetail() {
+    const { id } = useParams(); // workspaceId
     const navigate = useNavigate();
     
+    const [workspaceName, setWorkspaceName] = useState('Đang tải...');
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [files, setFiles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+    const [breadcrumbs, setBreadcrumbs] = useState<{_id: string, name: string}[]>([]);
+    
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+
+    // --- STATES MỚI CHO MENU 3 CHẤM VÀ ĐỔI TÊN ---
+    const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+    const [itemToRename, setItemToRename] = useState<{id: string, name: string, type: 'folder' | 'file'} | null>(null);
+    const [editName, setEditName] = useState('');
+
+    const isFolderEmpty = folders.length === 0 && files.length === 0;
+
+    // Tự động đóng Menu khi click ra ngoài
     useEffect(() => {
-        fetchWorkspaces();
+        const handleClickOutside = () => setActiveMenu(null);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    const fetchWorkspaces = async () => {
+    useEffect(() => {
+        if (id) fetchWorkspaceInfo();
+    }, [id]);
+
+    useEffect(() => {
+        fetchData(currentParentId);
+        if (currentParentId) fetchBreadcrumbs(currentParentId);
+        else setBreadcrumbs([]);
+    }, [currentParentId, id]);
+
+    const fetchWorkspaceInfo = async () => {
+        try {
+            const res = await workspaceService.getWorkspaceById(id!);
+            setWorkspaceName(res.data.data?.name || 'Workspace nhóm');
+        } catch (error) {
+            setWorkspaceName('Workspace nhóm');
+        }
+    };
+
+    const fetchData = async (parentId: string | null) => {
         try {
             setLoading(true);
-            const response = await workspaceService.getWorkspaces();
-            setWorkspaces(response.data.data || []);
+            const [foldersRes, filesRes] = await Promise.all([
+                folderService.getFolders(parentId, id), 
+                fileService.getFiles(parentId, id)
+            ]);
+            setFolders(foldersRes.data.data || []);
+            setFiles(filesRes.data.data || []);
         } catch (error: any) {
             if (error.response?.status === 401) navigate('/login');
-            console.error("Error take workspace list", error);
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
-    const handleCreateWorkspace = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newWorkspaceName.trim()) return;
+    const fetchBreadcrumbs = async (folderId: string) => {
         try {
-            await workspaceService.createWorkspace(newWorkspaceName.trim());
-            setNewWorkspaceName('');
-            setIsCreateModalOpen(false);
-            fetchWorkspaces(); // Tải lại danh sách
-        } catch (error: any) {
-            alert(error.response?.data?.message || "Error create workspace");
-        }
+            const response = await folderService.getFolderById(folderId);
+            setBreadcrumbs(response.data.breadcrumb || []);
+        } catch (error) {}
     };
 
-    // Hàm xử lý khi click vào 1 Workspace
-    const handleOpenWorkspace = (workspaceId: string) => {
-        navigate(`/workspaces/${workspaceId}`);
+    // --- CÁC HÀM XỬ LÝ GỌI API ---
+    const handleCreateFolder = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newFolderName.trim()) return;
+        try {
+            await folderService.createFolder(newFolderName.trim(), currentParentId, id);
+            setNewFolderName(''); setIsCreateModalOpen(false); fetchData(currentParentId);
+        } catch (error: any) { alert("Lỗi tạo thư mục"); }
+    };
+
+    const handleRename = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editName.trim() || !itemToRename) return;
+        try {
+            if (itemToRename.type === 'folder') {
+                await folderService.renameFolder(itemToRename.id, editName.trim());
+            } else {
+                alert("Tính năng đổi tên File sẽ làm ở GĐ 4");
+            }
+            setIsRenameModalOpen(false); setItemToRename(null); fetchData(currentParentId);
+        } catch (error: any) { alert("Lỗi đổi tên"); }
+    };
+
+    const handleDelete = async (itemId: string, type: 'folder' | 'file', name: string) => {
+        if (!window.confirm(`Bạn có chắc chắn muốn xóa "${name}" không?`)) return;
+        try {
+            if (type === 'folder') {
+                await folderService.deleteFolder(itemId);
+            } else {
+                alert("Tính năng xóa File sẽ làm ở GĐ 4");
+            }
+            fetchData(currentParentId);
+        } catch (error: any) { alert("Lỗi xóa"); }
+    };
+
+    const toggleMenu = (e: React.MouseEvent, menuId: string) => {
+        e.stopPropagation();
+        setActiveMenu(activeMenu === menuId ? null : menuId);
+    };
+
+    const formatSize = (bytes: number) => {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const getFileIcon = (fileName: string, size: number = 24) => {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        if (['pdf'].includes(ext || '')) return <FileText className="text-red-500" size={size} />;
+        if (['xls', 'xlsx', 'csv'].includes(ext || '')) return <FileSpreadsheet className="text-green-500" size={size} />;
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) return <ImageIcon className="text-purple-500" size={size} />;
+        if (['doc', 'docx', 'txt'].includes(ext || '')) return <FileText className="text-blue-500" size={size} />;
+        return <DefaultFileIcon className="text-gray-500" size={size} />;
+    };
+
+    // --- COMPONENT MENU DROPDOWN NHỎ ---
+    const ActionMenu = ({ item, type }: { item: any, type: 'folder' | 'file' }) => {
+        if (activeMenu !== item._id) return null;
+        return (
+            <div className="absolute right-8 top-8 w-44 bg-white rounded-lg shadow-xl border border-gray-100 py-1.5 z-50 overflow-hidden">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setItemToRename({id: item._id, name: item.name, type}); setEditName(item.name); setIsRenameModalOpen(true); setActiveMenu(null); }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                ><Edit2 size={16}/> Đổi tên</button>
+                
+                <button 
+                    onClick={(e) => { e.stopPropagation(); alert("Tính năng Di chuyển sẽ làm ở GĐ 4"); setActiveMenu(null); }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                ><Move size={16}/> Di chuyển</button>
+                
+                {type === 'file' && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); alert("Tính năng Tải xuống sẽ làm ở GĐ 4"); setActiveMenu(null); }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    ><Download size={16}/> Tải xuống</button>
+                )}
+
+                <div className="h-px bg-gray-100 my-1"></div>
+                
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleDelete(item._id, type, item.name); setActiveMenu(null); }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                ><Trash2 size={16}/> Xóa</button>
+            </div>
+        );
     };
 
     return (
-        <div className="max-w-7xl mx-auto h-full flex flex-col">
-            {/* Header */}
-            <div className="flex justify-between items-end mb-8 shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        Workspaces
-                    </h1>
-                    <p className="text-gray-500 mt-1 text-sm">Shared Team Workspace</p>
+        <div className="h-full max-w-7xl mx-auto">
+            {/* --- HEADER --- */}
+            <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate('/workspaces')} className="p-2 hover:bg-gray-200 text-gray-600 rounded-full transition">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">{workspaceName}</h1>
+                        <div className="flex items-center gap-2 mt-1 text-sm font-medium">
+                            <span onClick={() => setCurrentParentId(null)} className="text-gray-500 hover:text-blue-600 cursor-pointer transition">
+                                Gốc
+                            </span>
+                            {breadcrumbs.map((crumb) => (
+                                <React.Fragment key={crumb._id}>
+                                    <ChevronRight size={14} className="text-gray-400" />
+                                    <span onClick={() => setCurrentParentId(crumb._id)} className="text-gray-700 cursor-pointer hover:text-blue-600 transition">
+                                        {crumb.name}
+                                    </span>
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                <button 
-                    onClick={() => setIsCreateModalOpen(true)} 
-                    className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm"
-                >
-                    <Plus size={18} /> Create Workspace
-                </button>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition shadow-sm">
+                        <Plus size={18} /> Tạo thư mục
+                    </button>
+
+                    <div className="flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm mx-1">
+                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}><List size={20} /></button>
+                        <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}><LayoutGrid size={20} /></button>
+                    </div>
+
+                    <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
+                        <UserPlus size={18} /> Quản lý thành viên
+                    </button>
+                </div>
             </div>
 
-            {/* Danh sách Workspace */}
             {loading ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    
-                    {/* Render các Workspace THẬT từ API nhưng dùng UI MỚI */}
-                    {workspaces.map((ws, index) => {
-                        // Tự động gán 1 màu trong mảng colorPalette dựa vào index
-                        const cardColor = colorPalette[index % colorPalette.length];
-                        
-                        return (
-                            <div 
-                                key={ws._id}
-                                onClick={() => handleOpenWorkspace(ws._id)}
-                                className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer p-6 flex flex-col"
-                            >
-                                {/* Icon màu sắc */}
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white mb-4 ${cardColor}`}>
-                                    <Users size={24} />
-                                </div>
-                                
-                                {/* Tiêu đề & Mô tả */}
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-gray-800 text-xl mb-2 truncate" title={ws.name}>
-                                        {ws.name}
-                                    </h3>
-                                    <p className="text-gray-500 text-sm">Không gian làm việc chung</p>
-                                </div>
-                                
-                                {/* Footer với gạch ngang */}
-                                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-4 text-sm text-gray-500 font-medium">
-                                    <div className="flex items-center gap-1.5">
-                                        <Users size={16} className="text-gray-400" />
-                                        <span>{ws.members ? ws.members.length : 1} members</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        {/* Tạm thời để 0 files vì backend chưa đếm số lượng file, bạn có thể update sau */}
-                                        <span>0 files</span>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    {/* NẾU KHÔNG CÓ WORKSPACE NÀO -> Hiện khung xám đứt nét cũ */}
-                    {workspaces.length === 0 && (
-                        <div className="col-span-full text-center py-16 bg-white border border-dashed border-gray-300 rounded-xl">
-                            <Users className="mx-auto text-gray-300 mb-3" size={48} />
-                            <p className="text-gray-500 font-medium">You do not join any workspace</p>
-                            <p className="text-gray-400 text-sm mt-1">Let create a new workspace to start a team work</p>
+                <>
+                    {/* KHUNG XÁM KHI TRỐNG */}
+                    {isFolderEmpty ? (
+                        <div className="w-full text-center py-24 bg-white border border-dashed border-gray-300 rounded-2xl shadow-sm">
+                            <FolderIcon className="mx-auto text-gray-300 mb-4" size={56} />
+                            <p className="text-gray-600 font-medium text-lg">Workspace này đang trống</p>
+                            <p className="text-gray-400 text-sm mt-1">Bắt đầu tạo thư mục để chia sẻ cùng các thành viên</p>
                         </div>
+                    ) : (
+                        <>
+                            {/* --- CHẾ ĐỘ LIST --- */}
+                            {viewMode === 'list' && (
+                                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-visible">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-gray-200 bg-gray-50/50">
+                                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Tên</th>
+                                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm w-48">Ngày tạo</th>
+                                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm w-32">Kích thước</th>
+                                                <th className="px-6 py-4 w-16"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {folders.map(folder => (
+                                                <tr key={folder._id} onDoubleClick={() => setCurrentParentId(folder._id)} className="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer relative group">
+                                                    <td className="px-6 py-4 flex items-center gap-3"><FolderIcon className="text-blue-500" size={24} fill="currentColor" fillOpacity={0.2} /> <span className="font-medium text-gray-800">{folder.name}</span></td>
+                                                    <td className="px-6 py-4 text-gray-500 text-sm">{new Date(folder.createdAt || Date.now()).toLocaleDateString('vi-VN')}</td>
+                                                    <td className="px-6 py-4 text-gray-500 text-sm">—</td>
+                                                    <td className="px-6 py-4 text-right relative">
+                                                        <button onClick={(e) => toggleMenu(e, folder._id)} className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-200 opacity-0 group-hover:opacity-100"><MoreVertical size={18}/></button>
+                                                        <ActionMenu item={folder} type="folder" />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {files.map(file => (
+                                                <tr key={file._id} className="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer relative group">
+                                                    <td className="px-6 py-4 flex items-center gap-3">{getFileIcon(file.name, 24)} <span className="font-medium text-gray-800">{file.name}</span></td>
+                                                    <td className="px-6 py-4 text-gray-500 text-sm">{new Date(file.createdAt || Date.now()).toLocaleDateString('vi-VN')}</td>
+                                                    <td className="px-6 py-4 text-gray-500 text-sm">{formatSize(file.size)}</td>
+                                                    <td className="px-6 py-4 text-right relative">
+                                                        <button onClick={(e) => toggleMenu(e, file._id)} className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-200 opacity-0 group-hover:opacity-100"><MoreVertical size={18}/></button>
+                                                        <ActionMenu item={file} type="file" />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* --- CHẾ ĐỘ GRID --- */}
+                            {viewMode === 'grid' && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                                    {folders.map((folder) => (
+                                        <div key={folder._id} onDoubleClick={() => setCurrentParentId(folder._id)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col justify-between h-40 hover:shadow-md hover:border-blue-400 transition cursor-pointer group relative">
+                                            <div className="flex justify-between items-start">
+                                                <FolderIcon className="text-blue-500" size={36} fill="currentColor" fillOpacity={0.2} />
+                                                <button onClick={(e) => toggleMenu(e, folder._id)} className="text-gray-400 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition"><MoreVertical size={18}/></button>
+                                                <ActionMenu item={folder} type="folder" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-800 truncate mb-1" title={folder.name}>{folder.name}</p>
+                                                <p className="text-xs text-gray-400">—</p>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {files.map((file) => (
+                                        <div key={file._id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col justify-between h-40 hover:shadow-md hover:border-blue-400 transition cursor-pointer group relative">
+                                            <div className="flex justify-between items-start">
+                                                {getFileIcon(file.name, 36)}
+                                                <button onClick={(e) => toggleMenu(e, file._id)} className="text-gray-400 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition"><MoreVertical size={18}/></button>
+                                                <ActionMenu item={file} type="file" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-800 truncate mb-1" title={file.name}>{file.name}</p>
+                                                <p className="text-xs text-gray-400">{formatSize(file.size)}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
-                </div>
+                </>
             )}
 
-            {/* Modal Tạo mới */}
+            {/* Modal Tạo thư mục */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-xl font-bold">Create new workspace</h2>
-                        </div>
-                        <form onSubmit={handleCreateWorkspace} className="p-6">
-                            <input 
-                                autoFocus 
-                                type="text" 
-                                value={newWorkspaceName} 
-                                onChange={(e) => setNewWorkspaceName(e.target.value)} 
-                                placeholder="Nhập tên Workspace (VD: Dự án Marketing)..." 
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                            />
+                        <div className="px-6 py-4 border-b border-gray-100"><h2 className="text-xl font-bold">Tạo thư mục nhóm</h2></div>
+                        <form onSubmit={handleCreateFolder} className="p-6">
+                            <input autoFocus type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Nhập tên thư mục..." className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                             <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Hủy</button>
-                                <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">Creating new</button>
+                                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Hủy</button>
+                                <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg">Tạo</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Đổi tên */}
+            {isRenameModalOpen && itemToRename && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100"><h2 className="text-xl font-bold">Đổi tên {itemToRename.type === 'folder' ? 'thư mục' : 'tệp tin'}</h2></div>
+                        <form onSubmit={handleRename} className="p-6">
+                            <input autoFocus type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button type="button" onClick={() => setIsRenameModalOpen(false)} className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Hủy</button>
+                                <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg">Lưu</button>
                             </div>
                         </form>
                     </div>
