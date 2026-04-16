@@ -1,42 +1,35 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Layout from './components/Layout';
-import Settings from './pages/Settings'
-import Workspaces from './pages/Workspace'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import MyDrive from "./pages/MySpace";
+import Workspaces from "./pages/Workspaces";
+import WorkspaceDetail from "./pages/WorkspaceDetails";
+import SettingsPage from "./pages/Settings";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Nhóm các route có chung Layout (App Shell) */}
-        <Route path="/" element={<Layout />}>
-            {/* Route index nghĩa là khi ở url '/', nó sẽ hiện Dashboard bên trong Layout */}
-            <Route index element={<Dashboard />} />
-            
-            {/* Sau này bạn có thể thêm: */}
-            {/* <Route path="workspaces" element={<WorkspaceList />} /> */}
-        </Route>
-        <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            {/* 2. Thêm route settings */}
-            <Route path="settings" element={<Settings />} /> 
-        </Route>
-        <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="settings" element={<Settings />} /> 
-            {/* 2. Thêm Route cho workspaces */}
-            <Route path="workspaces" element={<Workspaces />} /> 
-        </Route>
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MyDrive />} />
+          <Route path="/drive" element={<MyDrive />} />
+          <Route path="/workspaces" element={<Workspaces />} />
+          <Route path="/workspaces/:slug" element={<WorkspaceDetail />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

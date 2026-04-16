@@ -1,5 +1,5 @@
 export interface User {
-    _id: String;
+    _id: string;
     email: string;
     username: string;
     globalRole: 'USER' | 'SYSTEM_ADMIN';
