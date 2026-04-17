@@ -22,11 +22,11 @@ const Login = () => {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
               <HardDrive className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-card-foreground">CloudDrive</span>
+            <span className="text-xl font-bold text-card-foreground">CloudSpace</span>
           </div>
 
-          <h1 className="text-3xl font-bold text-card-foreground mb-2">Chào mừng trở lại</h1>
-          <p className="text-muted-foreground mb-8">Đăng nhập để tiếp tục quản lý file thông minh</p>
+          <h1 className="text-3xl font-bold text-card-foreground mb-2">Welcome back</h1>
+          <p className="text-muted-foreground mb-8">Login for continuing smart management file</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <AuthInput
@@ -39,9 +39,9 @@ const Login = () => {
             />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-foreground">Mật khẩu</label>
+                <label className="text-sm font-medium text-foreground">Password</label>
                 <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                  Quên mật khẩu?
+                  Forget password?
                 </Link>
               </div>
               <div className="relative">
@@ -58,21 +58,21 @@ const Login = () => {
               </div>
             </div>
             <Button type="submit" className="w-full h-12 text-base font-semibold mt-2 gap-2">
-              Đăng nhập <ArrowRight className="h-5 w-5" />
+              Login <ArrowRight className="h-5 w-5" />
             </Button>
           </form>
 
           <div className="relative my-6">
             <Separator />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-4 text-sm text-muted-foreground">
-              hoặc
+              or
             </span>
           </div>
 
           <p className="text-center text-sm text-muted-foreground">
-            Chưa có tài khoản?{" "}
+            No account yet?{" "}
             <Link to="/register" className="font-medium text-primary hover:underline">
-              Đăng ký miễn phí
+              Register now
             </Link>
           </p>
         </div>

@@ -18,11 +18,11 @@ const Workspaces = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Workspaces</h1>
-            <p className="text-muted-foreground text-sm mt-1">Không gian làm việc nhóm</p>
+            <p className="text-muted-foreground text-sm mt-1">Teamwork space</p>
           </div>
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            Tạo Workspace
+            Create Workspace
           </Button>
         </div>
 
@@ -41,7 +41,7 @@ const Workspaces = () => {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  {ws.members} thành viên
+                  {ws.members} Members
                 </span>
                 <span>{ws.files} files</span>
               </div>

@@ -21,13 +21,13 @@ const FileContextMenu = ({ align = "end" }: { align?: "end" | "start" }) => (
     </DropdownMenuTrigger>
     <DropdownMenuContent align={align}>
       <DropdownMenuItem className="gap-2">
-        <Pencil className="h-4 w-4" /> Đổi tên
+        <Pencil className="h-4 w-4" /> Renam
       </DropdownMenuItem>
       <DropdownMenuItem className="gap-2">
-        <Download className="h-4 w-4" /> Tải xuống
+        <Download className="h-4 w-4" /> Download
       </DropdownMenuItem>
       <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
-        <Trash2 className="h-4 w-4" /> Xóa
+        <Trash2 className="h-4 w-4" /> Delete
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -41,8 +41,8 @@ const MyDrive = () => {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">My Drive</h1>
-            <p className="text-muted-foreground text-sm mt-1">Quản lý file cá nhân của bạn</p>
+            <h1 className="text-2xl font-bold text-foreground">My Space</h1>
+            <p className="text-muted-foreground text-sm mt-1">Manage your personal files</p>
           </div>
           <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <Button

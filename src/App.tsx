@@ -9,6 +9,8 @@ import MyDrive from "./pages/MySpace";
 import Workspaces from "./pages/Workspaces";
 import WorkspaceDetail from "./pages/WorkspaceDetails";
 import SettingsPage from "./pages/Settings";
+import Trash from "./pages/Trash";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -20,12 +22,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<MyDrive />} />
-          <Route path="/drive" element={<MyDrive />} />
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/workspaces/:slug" element={<WorkspaceDetail />} />
+          <Route path="/trash" element={<Trash />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

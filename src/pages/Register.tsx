@@ -21,16 +21,16 @@ const Register = () => {
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary mb-4">
             <Lock className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-card-foreground">Đăng ký tài khoản</h1>
+          <h1 className="text-2xl font-bold text-card-foreground">Register an account</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hệ thống sẽ tự động tạo <span className="text-primary font-medium">My Drive</span> cá nhân cho bạn
+            System will automatically create <span className="text-primary font-medium">My Space</span> for you 
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <AuthInput
-            label="Họ và tên"
-            placeholder="Nguyễn Văn A"
+            label="Your name"
+            placeholder="Nguyen Van A"
             icon={<User className="h-5 w-5" />}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -44,7 +44,7 @@ const Register = () => {
             onChange={(e) => setEmail(e.target.value)}
           />
           <AuthInput
-            label="Mật khẩu"
+            label="Password"
             type="password"
             placeholder="••••••••"
             icon={<Lock className="h-5 w-5" />}
@@ -52,14 +52,14 @@ const Register = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
           <Button type="submit" className="w-full h-12 text-base font-semibold mt-2">
-            Đăng ký
+            Sign now
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Đã có tài khoản?{" "}
+          Already have an account?{" "}
           <Link to="/login" className="font-medium text-primary hover:underline">
-            Đăng nhập
+            Login
           </Link>
         </p>
       </div>

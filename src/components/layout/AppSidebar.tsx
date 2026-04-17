@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { FolderOpen, Users, Settings, Upload, HardDrive, HelpCircle } from "lucide-react";
+import { FolderOpen, Users, Settings, Upload, HardDrive, HelpCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 const navItems = [
-  { label: "My Drive", icon: FolderOpen, path: "/drive" },
+  { label: "My Space", icon: FolderOpen, path: "/" },
   { label: "Workspaces", icon: Users, path: "/workspaces" },
-  { label: "Cài đặt", icon: Settings, path: "/settings" },
+  { label: "Trash", icon: Trash2, path: "/trash" },
+  { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export function AppSidebar() {
@@ -20,14 +21,14 @@ export function AppSidebar() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
           <HardDrive className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="text-lg font-bold text-card-foreground">CloudDrive</span>
+        <span className="text-lg font-bold text-card-foreground">CloudSpace</span>
       </div>
 
       {/* Upload button */}
       <div className="px-4 mb-4">
         <Button className="w-full h-11 gap-2 text-base font-semibold">
           <Upload className="h-5 w-5" />
-          Tải lên
+          Upload
         </Button>
       </div>
 
@@ -56,18 +57,18 @@ export function AppSidebar() {
       {/* Storage indicator */}
       <div className="px-6 py-4 border-t border-border">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-muted-foreground">Dung lượng</span>
+          <span className="text-muted-foreground">Volume</span>
           <span className="font-medium text-foreground">15 GB / 100 GB</span>
         </div>
         <Progress value={15} className="h-2" />
       </div>
 
-      {/* Help button */}
+      {/* Help button
       <div className="px-6 pb-4 flex justify-end">
         <button className="text-muted-foreground hover:text-foreground">
           <HelpCircle className="h-5 w-5" />
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 }
