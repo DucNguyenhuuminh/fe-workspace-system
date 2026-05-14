@@ -1,124 +1,134 @@
-import { useState } from "react";
-import { LayoutList, LayoutGrid, MoreVertical, Folder, FileText, FileSpreadsheet, Presentation, Image, RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Loader2, Trash2, AlertTriangle, FileX2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AppLayout from "@/components/layout/AppLayout";
+import { useTrashStore } from "@/stores/trashStore";
+import { mergeItems, getFileIcon, getFolderIcon, formatBytes, formatDate } from "@/utils/fileUtils";
+import { useNavigate } from "react-router-dom";
 
-const trashedFiles = [
-  { name: "Old Report Q4.xlsx", type: "xlsx", date: "10/2/2026", size: "2.50 MB", deletedDate: "5/4/2026", icon: FileSpreadsheet, color: "text-emerald-500" },
-  { name: "Draft Proposal.pdf", type: "pdf", date: "20/1/2026", size: "1.20 MB", deletedDate: "2/4/2026", icon: FileText, color: "text-destructive" },
-  { name: "Archive 2025", type: "folder", date: "1/12/2025", size: "—", deletedDate: "28/3/2026", icon: Folder, color: "text-primary" },
-  { name: "Old Presentation.pptx", type: "pptx", date: "15/11/2025", size: "4.00 MB", deletedDate: "25/3/2026", icon: Presentation, color: "text-orange-500" },
-  { name: "Screenshot_old.jpg", type: "jpg", date: "10/10/2025", size: "800 KB", deletedDate: "20/3/2026", icon: Image, color: "text-purple-500" },
-];
+const TrashPage = () => {
+  const navigate = useNavigate();
+  const { 
+    trashedFolders, 
+    trashedDocuments, 
+    isLoading, 
+    fetchTrash, 
+    forceDeleteItem, 
+    emptyAllTrash,
+    restoreItem 
+  } = useTrashStore();
 
-const TrashContextMenu = ({ align = "end" }: { align?: "end" | "start" }) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button className="text-muted-foreground hover:text-foreground">
-        <MoreVertical className="h-4 w-4" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align={align}>
-      <DropdownMenuItem className="gap-2">
-        <RotateCcw className="h-4 w-4" /> Restore
-      </DropdownMenuItem>
-      <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
-        <Trash2 className="h-4 w-4" /> Delete 
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+  useEffect(() => {
+    fetchTrash(null);
+  }, [fetchTrash]);
 
-const Trash = () => {
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const allItems = mergeItems(trashedFolders, trashedDocuments);
+
+  const handleEmptyTrash = async () => {
+    if (window.confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ dữ liệu trong thùng rác và không thể khôi phục. Bạn có chắc chắn?")) {
+      await emptyAllTrash();
+    }
+  };
+
+  const handleForceDelete = (id: string, kind: "folder" | "document") => {
+    if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn mục này?")) {
+      forceDeleteItem(id, kind);
+    }
+  };
+
+  const getDisplayData = (item: any) => {
+    if (item.kind === "folder") {
+      const { icon: Icon, color } = getFolderIcon();
+      return { id: item.data._id, name: item.data.name, date: formatDate(item.data.deletedAt || item.data.createdAt), size: "—", Icon, color, kind: item.kind };
+    }
+    const { icon: Icon, color } = getFileIcon(item.data.physicalFileId?.mimeType || "");
+    return { id: item.data._id, name: item.data.originalName, date: formatDate(item.data.deletedAt || item.data.createdAt), size: formatBytes(item.data.physicalFileId?.sizeBytes || 0), Icon, color, kind: item.kind };
+  };
 
   return (
     <AppLayout>
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Trash</h1>
-            <p className="text-muted-foreground text-sm mt-1">All deleted files will be here</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-              <Button
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("list")}
-              >
-                <LayoutList className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("grid")}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
+      <div className="space-y-6 max-w-6xl mx-auto">
+        {/* Header Thùng rác */}
+        <div className="flex items-center justify-between bg-red-50/50 p-6 rounded-2xl border border-red-100">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+              <Trash2 className="h-6 w-6" />
             </div>
-            {trashedFiles.length > 0 && (
-              <Button variant="destructive" className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                Xóa tất cả
-              </Button>
-            )}
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Thùng rác</h1>
+              <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                Các mục trong thùng rác sẽ bị xóa vĩnh viễn sau 30 ngày.
+              </p>
+            </div>
           </div>
+          
+          <Button 
+            variant="destructive" 
+            className="gap-2 shadow-sm"
+            onClick={handleEmptyTrash}
+            disabled={allItems.length === 0 || isLoading}
+          >
+            <FileX2 className="h-4 w-4" />
+            Dọn sạch thùng rác
+          </Button>
         </div>
 
-        {trashedFiles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Trash2 className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">Empty trash</h3>
-            <p className="text-sm text-muted-foreground">Your deleted files will exist here</p>
-          </div>
-        ) : viewMode === "list" ? (
-          <div className="rounded-xl border border-border bg-card">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Name</th>
-                  <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Deleted Date</th>
-                  <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Size</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {trashedFiles.map((file) => (
-                  <tr key={file.name} className="border-b border-border last:border-b-0 hover:bg-secondary/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <file.icon className={`h-5 w-5 ${file.color}`} />
-                        <span className="text-sm font-medium text-foreground">{file.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{file.deletedDate}</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{file.size}</td>
-                    <td className="px-4 py-4">
-                      <TrashContextMenu />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Danh sách Data */}
+        {isLoading ? (
+          <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+        ) : allItems.length === 0 ? (
+          <div className="text-center py-24 text-slate-500 border-2 border-dashed rounded-2xl bg-slate-50/50">
+            <Trash2 className="h-12 w-12 mx-auto text-slate-300 mb-3" />
+            <p className="font-medium text-slate-600">Thùng rác đang trống</p>
+            <p className="text-sm mt-1">Không có tệp hay thư mục nào ở đây.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {trashedFiles.map((file) => (
-              <div key={file.name} className="group relative rounded-xl border border-border bg-card p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <TrashContextMenu align="end" />
-                </div>
-                <file.icon className={`h-10 w-10 ${file.color} mb-3`} />
-                <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground mt-1">{file.size}</p>
-              </div>
-            ))}
+          <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+            <div className="grid grid-cols-12 px-6 py-4 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
+              <div className="col-span-6">Tên</div>
+              <div className="col-span-3">Ngày xóa</div>
+              <div className="col-span-2">Kích thước</div>
+              <div className="col-span-1 text-right">Thao tác</div>
+            </div>
+            
+            <div className="divide-y divide-slate-100 max-h-[600px] overflow-auto">
+              {allItems.map((item) => {
+                const display = getDisplayData(item);
+                return (
+                  <div key={display.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-50 transition-colors">
+                    <div className="col-span-6 flex items-center gap-3 pr-4">
+                      <display.Icon className={`h-6 w-6 ${display.color}`} />
+                      <span className="text-[15px] font-medium text-slate-700 truncate line-through opacity-70">
+                        {display.name}
+                      </span>
+                    </div>
+                    <div className="col-span-3 text-sm text-slate-500">{display.date}</div>
+                    <div className="col-span-2 text-sm text-slate-500">{display.size}</div>
+                    <div className="col-span-1 text-right">
+                      {/* Nút Khôi phục */}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8 px-2 gap-1"
+                        onClick={() => restoreItem(display.id, display.kind as "folder" | "document")}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span className="text-xs">Khôi phục</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+                        onClick={() => handleForceDelete(display.id, display.kind as "folder" | "document")}
+                      >
+                        Xóa vĩnh viễn
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -126,4 +136,4 @@ const Trash = () => {
   );
 };
 
-export default Trash;
+export default TrashPage;

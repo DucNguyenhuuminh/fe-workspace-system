@@ -1,12 +1,14 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { useWakeUpRefresh } from "@/hooks/use-wakeUpRefresh";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
+  useWakeUpRefresh();
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />

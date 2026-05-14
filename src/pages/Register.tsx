@@ -1,17 +1,39 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { User, Mail, Lock } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { User, Mail, Lock, Loader2 } from "lucide-react"; // Thêm Loader2 cho hiệu ứng loading
 import { AuthInput } from "@/components/ui/auth-input";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/stores/authStore";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  const navigate = useNavigate();
+  const { register, isLoading } = useAuthStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrate with backend
+    
+    // Kiểm tra cơ bản
+    if (!name || !email || !password) return;
+
+    try {
+      // Backend của bạn yêu cầu body có dạng: { email, password, username, globalRole }
+      await register({ 
+        username: name, 
+        email, 
+        password, 
+        globalRole: "USER" 
+      });
+      
+      // Chuyển hướng về trang đăng nhập sau khi thành công
+      navigate("/login");
+    } catch (error) {
+      // Lỗi đã được Toast xử lý bên trong useAuthStore, 
+      // ở đây không cần làm gì thêm, form vẫn giữ nguyên để người dùng sửa.
+    }
   };
 
   return (
@@ -34,6 +56,7 @@ const Register = () => {
             icon={<User className="h-5 w-5" />}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={isLoading}
           />
           <AuthInput
             label="Email"
@@ -42,6 +65,7 @@ const Register = () => {
             icon={<Mail className="h-5 w-5" />}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
           />
           <AuthInput
             label="Password"
@@ -50,9 +74,22 @@ const Register = () => {
             icon={<Lock className="h-5 w-5" />}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
           />
-          <Button type="submit" className="w-full h-12 text-base font-semibold mt-2">
-            Sign now
+          
+          <Button 
+            type="submit" 
+            className="w-full h-12 text-base font-semibold mt-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Sign now"
+            )}
           </Button>
         </form>
 
