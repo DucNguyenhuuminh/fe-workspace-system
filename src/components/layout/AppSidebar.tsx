@@ -19,34 +19,25 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // 1. Lấy thông tin thư mục hiện tại từ Zustand Store
   const currentFolderInfo = useDriveStore((state) => state.currentFolderInfo);
-
-  // 2. Lấy workspaceId từ URL (nếu người dùng đang ở trong trang chi tiết của 1 Workspace)
-  // Ví dụ URL: /workspaces/65f1a... -> match[1] sẽ là '65f1a...'
   const workspaceMatch = location.pathname.match(/\/workspaces\/([a-zA-Z0-9_-]+)/);
   const currentWorkspaceId = workspaceMatch ? workspaceMatch[1] : null;
   const currentFolderId = currentFolderInfo?._id || null;
 
-  // 3. Khởi tạo Hook Upload với context hiện tại
   const { uploadFile, progress, isUploading } = useFileUpload({
     workspaceId: currentWorkspaceId,
     folderId: currentFolderId,
   });
 
-  // Sự kiện khi bấm nút Upload (Mở cửa sổ chọn file)
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  // Sự kiện khi người dùng đã chọn file xong
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       await uploadFile(file);
     }
-    // Reset lại value của input để lần sau chọn lại đúng file đó vẫn nhận sự kiện onChange
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

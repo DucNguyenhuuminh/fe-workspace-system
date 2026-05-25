@@ -1,23 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LayoutList, LayoutGrid, MoreVertical, Pencil, Download, Trash2, 
-  FolderPlus, ArrowLeft, FolderOpen, UploadCloud
+  FolderPlus, ArrowLeft, FolderOpen, UploadCloud, FolderOutput, Check, Loader2, ChevronRight, Eye, Link
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import AppLayout from "@/components/layout/AppLayout";
+import ShareModal from "@/components/share/ShareModal";
 import { toast } from "sonner"; 
 
 import { useMySpace } from "@/hooks/use-mySpace"; 
 import { getFileIcon, getFolderIcon, formatBytes, formatDate } from "@/utils/fileUtils";
 import type { FileItem } from "@/utils/fileUtils"; 
 
-// --- CONTEXT MENU (Giữ nguyên) ---
+// --- CONTEXT MENU ---
 const FileContextMenu = ({ 
-  align = "end", isFolder, onDelete, onRename, onDownload
+  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, onShare
 }: { 
   align?: "end" | "start"; isFolder: boolean;
-  onDelete: () => void; onRename: () => void; onDownload: () => void;
+  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void; onShare: () => void;
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -25,15 +27,30 @@ const FileContextMenu = ({
         <MoreVertical className="h-4 w-4" />
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align={align}>
+    <DropdownMenuContent align={align} className="w-48">
+      {!isFolder && (
+        <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onView(); }}>
+          <Eye className="h-4 w-4" /> Xem trước
+        </DropdownMenuItem>
+      )}
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onRename(); }}>
         <Pencil className="h-4 w-4" /> Đổi tên
       </DropdownMenuItem>
+      <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onMove(); }}>
+        <FolderOutput className="h-4 w-4" /> Di chuyển tới...
+      </DropdownMenuItem>
+      <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onShare(); }}>
+        <Link className="h-4 w-4" /> Chia sẻ
+      </DropdownMenuItem>
+      
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
           <Download className="h-4 w-4" /> Tải xuống
         </DropdownMenuItem>
       )}
+      
+      <DropdownMenuSeparator />
+      
       <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
         <Trash2 className="h-4 w-4" /> Xóa
       </DropdownMenuItem>
@@ -43,13 +60,90 @@ const FileContextMenu = ({
 
 const MySpace = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  
+
   const { 
     allItems, currentFolderInfo, isLoading, 
     createFolder, handleBack, fetchFolderContents,
     renameFolderItem, renameDocumentItem, 
-    deleteFolderItem, deleteDocumentItem, downloadDocument 
+    deleteFolderItem, deleteDocumentItem, downloadDocument,
+    moveFolderItem, moveDocumentItem, viewDocument
   } = useMySpace();
+
+  // --- STATE CHO TÍNH NĂNG DI CHUYỂN ---
+  const [movingItem, setMovingItem] = useState<FileItem | null>(null);
+  const [destPath, setDestPath] = useState<{id: string | null, name: string}[]>([{id: null, name: 'My Space'}]);
+  const [destFolders, setDestFolders] = useState<any[]>([]);
+  const [isFetchingDest, setIsFetchingDest] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const [shareItem, setShareItem] = useState<FileItem | null>(null);
+
+  // Lấy danh sách thư mục đích khi đang mở Dialog
+  useEffect(() => {
+    if (!movingItem) return;
+    
+    const fetchDestFolders = async () => {
+      setIsFetchingDest(true);
+      try {
+        const currentDestId = destPath[destPath.length - 1].id;
+        // Tạm dùng fetch chay ở đây để lướt cây thư mục mà không ảnh hưởng tới UI chính
+        const { folderService } = await import('@/services/folderService');
+        const res = await folderService.getFolders(currentDestId, undefined);
+        let folders = res.data.data || [];
+        
+        // Lọc bỏ chính thư mục đang bị di chuyển để tránh lỗi vòng lặp (Rắn cắn đuôi)
+        if (movingItem.kind === "folder") {
+          folders = folders.filter((f: any) => f._id !== movingItem.data._id);
+        }
+        setDestFolders(folders);
+      } catch (error) {
+        toast.error("Không thể tải danh sách thư mục đích.");
+      } finally {
+        setIsFetchingDest(false);
+      }
+    };
+
+    fetchDestFolders();
+  }, [movingItem, destPath]);
+
+  // --- CÁC HÀM XỬ LÝ (Handlers) ---
+
+  const handleConfirmMove = async () => {
+    if (!movingItem) return;
+    const targetFolderId = destPath[destPath.length - 1].id;
+    const currentParentId = currentFolderInfo?._id || null;
+
+    if (targetFolderId === currentParentId) {
+      toast.warning("Tệp này đã nằm trong thư mục đích rồi!");
+      setMovingItem(null);
+      return;
+    }
+
+    setIsMoving(true);
+    const toastId = toast.loading("Đang di chuyển...");
+    
+    try {
+      // 🚨 GỌI HÀM TỪ HOOK THAY VÌ GỌI TRỰC TIẾP SERVICE
+      if (movingItem.kind === "folder") {
+        // Tham số thứ 3 là null vì ở MySpace không có workspaceId
+        await moveFolderItem(movingItem.data._id, targetFolderId, null);
+      } else {
+        await moveDocumentItem(movingItem.data._id, targetFolderId);
+      }
+      
+      toast.success("Di chuyển thành công!", { id: toastId });
+      
+      // Reset state & Đóng Dialog
+      setMovingItem(null);
+      setDestPath([{id: null, name: 'My Space'}]);
+      
+      // Không cần reload page hay fetch lại data nữa vì Store đã tự động filter item đi rồi!
+    } catch (error) {
+      // Toast lỗi đã được xử lý trong Store, ở đây chỉ cần tắt loading dialog
+      console.error(error);
+    } finally {
+      setIsMoving(false);
+    }
+  };
 
   const handleCreateFolder = () => {
     const folderName = window.prompt("Nhập tên thư mục mới:");
@@ -76,8 +170,16 @@ const MySpace = () => {
     }
   };
 
+  const handleView = (item: FileItem) => {
+    if (item.kind === "document") viewDocument(item.data._id);
+  };
+
   const handleDoubleClick = (item: FileItem) => {
-    if (item.kind === "folder") fetchFolderContents(item.data._id);
+    if (item.kind === "folder"){
+      fetchFolderContents(item.data._id);
+    }else {
+      handleView(item);
+    }
   };
 
   const getDisplayData = (item: FileItem) => {
@@ -125,7 +227,7 @@ const MySpace = () => {
 
         {/* --- CONTENT SECTION --- */}
         {isLoading ? (
-          /* TRẠNG THÁI 1: LOADING SKELETON (Đẹp và mượt hơn Spinner) */
+          /* TRẠNG THÁI 1: LOADING SKELETON */
           viewMode === "list" ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="grid grid-cols-12 px-6 py-3 border-b text-xs font-semibold text-muted-foreground uppercase bg-secondary/30">
@@ -159,7 +261,7 @@ const MySpace = () => {
             </div>
           )
         ) : allItems.length === 0 ? (
-          /* TRẠNG THÁI 2: THƯ MỤC RỖNG SKELETON (Empty State) */
+          /* TRẠNG THÁI 2: THƯ MỤC RỖNG */
           <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed border-border/60 rounded-2xl bg-secondary/20 transition-all hover:bg-secondary/30">
             <div className="relative mb-6">
               <FolderOpen className="h-20 w-20 text-muted-foreground/30" strokeWidth={1} />
@@ -204,7 +306,19 @@ const MySpace = () => {
                     <div className="col-span-3 text-sm text-muted-foreground select-none">{display.date}</div>
                     <div className="col-span-2 text-sm text-muted-foreground select-none">{display.size}</div>
                     <div className="col-span-1 text-right">
-                      <FileContextMenu isFolder={display.isFolder} onRename={() => handleRename(item)} onDownload={() => handleDownload(item)} onDelete={() => handleDelete(item)} />
+                      {/* Truyền thêm onMove vào ContextMenu */}
+                      <FileContextMenu 
+                        isFolder={display.isFolder} 
+                        onRename={() => handleRename(item)} 
+                        onDownload={() => handleDownload(item)} 
+                        onDelete={() => handleDelete(item)} 
+                        onMove={() => {
+                          setDestPath([{id: null, name: 'My Space'}]); 
+                          setMovingItem(item); 
+                        }}
+                        onView={() => {handleView(item)}}
+                        onShare={() => setShareItem(item)}
+                      />
                     </div>
                   </div>
                 );
@@ -223,7 +337,19 @@ const MySpace = () => {
                   onDoubleClick={() => handleDoubleClick(item)}
                 >
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                    <FileContextMenu isFolder={display.isFolder} onRename={() => handleRename(item)} onDownload={() => handleDownload(item)} onDelete={() => handleDelete(item)} />
+                    {/* Truyền thêm onMove vào ContextMenu */}
+                    <FileContextMenu 
+                      isFolder={display.isFolder} 
+                      onRename={() => handleRename(item)} 
+                      onDownload={() => handleDownload(item)} 
+                      onDelete={() => handleDelete(item)} 
+                      onMove={() => {
+                        setDestPath([{id: null, name: 'My Space'}]);
+                        setMovingItem(item);
+                      }}
+                      onView={() => {handleView(item)}}
+                      onShare={() => setShareItem(item)}
+                    />
                   </div>
                   <div className="p-2 w-fit rounded-lg bg-secondary/50 mb-4 group-hover:scale-110 transition-transform">
                     <display.Icon className={`h-10 w-10 ${display.color}`} />
@@ -236,6 +362,79 @@ const MySpace = () => {
           </div>
         )}
       </div>
+
+      {/* --- MODAL CHỌN THƯ MỤC ĐÍCH ĐỂ DI CHUYỂN --- */}
+      <Dialog open={!!movingItem} onOpenChange={(open) => !open && setMovingItem(null)}>
+        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-background border-border">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <FolderOutput className="h-5 w-5 text-indigo-500" />
+              Di chuyển tới...
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Breadcrumb Navigation (Hiển thị đường dẫn) */}
+          <div className="px-6 py-3 bg-secondary/30 flex items-center gap-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
+            {destPath.map((pathItem, index) => (
+              <div key={pathItem.id || 'root'} className="flex items-center text-sm">
+                <button 
+                  className={`hover:text-indigo-600 transition-colors ${index === destPath.length - 1 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}
+                  onClick={() => setDestPath(prev => prev.slice(0, index + 1))}
+                >
+                  {pathItem.name}
+                </button>
+                {index < destPath.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />}
+              </div>
+            ))}
+          </div>
+
+          {/* Danh sách Thư mục */}
+          <div className="h-[300px] overflow-y-auto p-2">
+            {isFetchingDest ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : destFolders.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                <FolderOpen className="h-12 w-12 opacity-20 mb-2" />
+                <p className="text-sm">Không có thư mục con nào</p>
+              </div>
+            ) : (
+              destFolders.map((folder: any) => (
+                <div 
+                  key={folder._id}
+                  onClick={() => setDestPath(prev => [...prev, { id: folder._id, name: folder.name }])}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary cursor-pointer transition-colors"
+                >
+                  <FolderOpen className="h-5 w-5 text-blue-500 fill-blue-500/20" />
+                  <span className="text-sm font-medium flex-1 truncate">{folder.name}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Nút Hành động */}
+          <DialogFooter className="p-4 border-t bg-secondary/10 flex justify-between sm:justify-between items-center">
+            <span className="text-xs text-muted-foreground pl-2 truncate flex-1 pr-4">
+              Đích: <strong className="text-foreground">{destPath[destPath.length - 1].name}</strong>
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setMovingItem(null)}>Hủy</Button>
+              <Button onClick={handleConfirmMove} disabled={isMoving} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                {isMoving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Di chuyển đến đây
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+        <ShareModal 
+          isOpen={!!shareItem} 
+          onClose={() => setShareItem(null)}
+          fileId={shareItem?.data._id || null}
+          fileName={shareItem ? (shareItem.kind === "document" ? shareItem.data.originalName : shareItem.data.name) : ''}
+        />
+      </Dialog>
     </AppLayout>
   );
 };

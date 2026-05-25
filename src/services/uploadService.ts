@@ -24,7 +24,10 @@ export const uploadService = {
       onProgress?: UploadProgressCallback;
     } = {}
   ): Promise<Document> => {
-    const { workspaceId = null, folderId = null, onProgress } = options;
+    const workspaceId = options.workspaceId || null;
+    const folderId = options.folderId || null;
+    const onProgress = options.onProgress;
+    
     onProgress?.(0);
 
     const hashString = await hashFile(file);
@@ -51,6 +54,7 @@ export const uploadService = {
 
     if (isDuplicate && existingDoc) {
       onProgress?.(100);
+      triggerNotiRefresh(); 
       return existingDoc;
     }
 
@@ -69,7 +73,7 @@ export const uploadService = {
     };
 
     const initRes = await api.post<InitUploadResponse>("/files-worker/init", initPayload);
-    const { uploadId, objectName, presignedUrls } = initRes.data.data;
+    const { uploadId, objectName, minioObjectPath, presignedUrls } = initRes.data.data;
 
     const uploadChunk = async (chunkIndex: number): Promise<string> => {
       const start = chunkIndex * CHUNK_SIZE;
@@ -79,14 +83,13 @@ export const uploadService = {
       const res = await fetch(presignedUrls[chunkIndex], {
         method: "PUT",
         body: chunk,
-        headers: file.type ? { "Content-Type": file.type } : undefined,
+        headers: { "Content-Type": mimeType },
       });
 
       if (!res.ok) throw new Error(`Chunk ${chunkIndex + 1} upload failed`);
 
       const etag = res.headers.get("ETag")?.replace(/"/g, "") ?? "";
       
-      // LOG CẢNH BÁO CORS NẾU ETAG BỊ RỖNG
       if (!etag) {
         console.warn(`Không đọc được ETag ở chunk ${chunkIndex + 1}. Hãy kiểm tra cấu hình CORS của MinIO!`);
       }
@@ -112,6 +115,7 @@ export const uploadService = {
       uploadId,
       etags,
       objectName,
+      minioObjectPath: minioObjectPath || objectName,
       filename: file.name,
       totalChunks,
       mimeType,
@@ -121,8 +125,10 @@ export const uploadService = {
       folderId,
     };
 
-    triggerNotiRefresh();
+    // Gọi API Merge trước
     const mergeRes = await api.post<MergeUploadResponse>("/files-worker/merge", mergePayload);
+
+    triggerNotiRefresh();
 
     onProgress?.(100);
     return mergeRes.data.data;

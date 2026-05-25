@@ -11,20 +11,17 @@ interface DriveState {
   breadcrumbs: { _id: string; name: string; parentId: string | null }[];
   isLoading: boolean;
 
-  
-  
   fetchRootItems: (workspaceId: string | null) => Promise<void>;
   fetchFolderContents: (folderId: string) => Promise<void>;
-
-  // Thao tác với Folder
   createNewFolder: (name: string, workspaceId?: string | null, parentId?: string | null) => Promise<void>;
   renameFolderItem: (folderId: string, newName: string) => Promise<void>;
   deleteFolderItem: (folderId: string) => Promise<void>;
-  
-  // Thao tác với File
+  moveFolderItem: (folderId: string, newParentId: string | null, targetWorkspaceId: string | null) => Promise<void>;
   renameDocumentItem: (documentId: string, newName: string) => Promise<void>;
   deleteDocumentItem: (documentId: string) => Promise<void>;
   downloadDocument: (documentId: string, fileName: string) => Promise<void>;
+  moveDocumentItem: (documentId: string, targetFolderId: string | null) => Promise<void>;
+  viewDocument: (documentId: string) => Promise<void>;
 }
 
 export const useDriveStore = create<DriveState>((set, get) => ({
@@ -96,7 +93,6 @@ export const useDriveStore = create<DriveState>((set, get) => ({
     try {
       await folderService.renameFolder(folderId, newName);
       toast.success("Đổi tên thư mục thành công");
-      // Cập nhật trực tiếp state UI
       set((state) => ({
         folders: state.folders.map((f) => 
           f._id === folderId ? { ...f, name: newName } : f
@@ -111,7 +107,6 @@ export const useDriveStore = create<DriveState>((set, get) => ({
     try {
       await folderService.deleteFolder(folderId);
       toast.success("Đã chuyển thư mục vào thùng rác");
-      // Lọc state UI để không phải gọi lại API (tối ưu hiệu năng)
       set((state) => ({
         folders: state.folders.filter((f) => f._id !== folderId)
       }));
@@ -120,11 +115,22 @@ export const useDriveStore = create<DriveState>((set, get) => ({
     }
   },
 
+  moveFolderItem: async (folderId, newParentId, targetWorkspaceId) => {
+    try {
+      await folderService.moveFolder(folderId, newParentId, targetWorkspaceId);
+      set((state) => ({
+        folders: state.folders.filter((f) => f._id !== folderId)
+      }));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Di chuyển thư mục thất bại");
+      throw error;
+    }
+  },
+
   renameDocumentItem: async (documentId, newName) => {
     try {
       await fileService.renameFile(documentId, newName);
       toast.success("Đổi tên file thành công");
-      // Cập nhật trực tiếp state UI
       set((state) => ({
         documents: state.documents.map((d) => 
           d._id === documentId ? { ...d, originalName: newName } : d
@@ -147,10 +153,21 @@ export const useDriveStore = create<DriveState>((set, get) => ({
     }
   },
 
+  moveDocumentItem: async (documentId, targetFolderId) => {
+    try {
+      await fileService.moveFile(documentId, targetFolderId);
+      set((state) => ({
+        documents: state.documents.filter((d) => d._id !== documentId)
+      }));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Di chuyển file thất bại");
+      throw error;
+    }
+  },
+
   downloadDocument: async (documentId: string, fileName: string) => {
     try {
       toast.info("Đang lấy liên kết tải xuống...");
-    
       const fileUrl = await fileService.getFileLink(documentId, "download"); 
     
       if (fileUrl) {
@@ -166,6 +183,20 @@ export const useDriveStore = create<DriveState>((set, get) => ({
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Lỗi khi lấy liên kết tải xuống");
+    }
+  },
+
+  viewDocument: async (documentId: string) => {
+    try {
+      toast.info("Đang mở tệp...");
+      const fileUrl = await fileService.getFileLink(documentId, 'view');
+      if (fileUrl) {
+        window.open(fileUrl, '_blank');
+      }else {
+        toast.error("Không tìm thấy đường dẫn tệp.");
+      }
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Lỗi khi mở tệp");
     }
   }
 }));

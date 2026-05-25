@@ -11,7 +11,6 @@ interface UploadContext {
 export const useFileUpload = (context: UploadContext) => {
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  // THÊM STATE NÀY ĐỂ LƯU THÔNG TIN FILE ĐANG TẢI
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   
   const { fetchRootItems, fetchFolderContents } = useDriveStore();
@@ -30,7 +29,6 @@ export const useFileUpload = (context: UploadContext) => {
 
       toast.success(`"${doc.originalName}" đã tải lên thành công!`);
       
-      // Reload UI sau khi upload xong
       if (context.folderId) {
         await fetchFolderContents(context.folderId);
       } else {
@@ -41,7 +39,6 @@ export const useFileUpload = (context: UploadContext) => {
       toast.error(error.response?.data?.message || "Tải lên thất bại, vui lòng thử lại");
       console.error(error);
     } finally {
-      // Đợi 1 giây rồi mới ẩn popup đi để người dùng kịp nhìn thấy 100%
       setTimeout(() => {
         setIsUploading(false);
         setProgress(0);

@@ -6,10 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
 
-// Import Store để check token
 import { useAuthStore } from "@/stores/authStore";
 
-// Pages
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MyDrive from "./pages/MySpace";
@@ -17,6 +15,9 @@ import Workspaces from "./pages/Workspaces";
 import WorkspaceDetail from "./pages/WorkspaceDetails";
 import SettingsPage from "./pages/Settings";
 import Trash from "./pages/Trash";
+import AdminLayout from "@/components/layout/AdminLayout";
+import AdminDashboard from "@/pages/AdminDashboard";
+import SharePage from "@/pages/SharePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,12 +26,10 @@ const App = () => {
   const { fetchProfile, user } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // LOGIC GIỮ PHIÊN ĐĂNG NHẬP KHI F5
   useEffect(() => {
     const initializeApp = async () => {
       const token = localStorage.getItem("accessToken");
 
-      // Nếu trong ổ cứng có token nhưng RAM chưa có thông tin user (do vừa F5)
       if (token && !user) {
         try {
           await fetchProfile();
@@ -38,8 +37,6 @@ const App = () => {
           console.error("Token không hợp lệ hoặc đã hết hạn", error);
         }
       }
-      
-      // Xong xuôi hết thì tắt màn hình chờ
       setIsInitializing(false);
     };
 
@@ -73,7 +70,12 @@ const App = () => {
             <Route path="/workspaces/:id" element={<WorkspaceDetail />} /> 
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/trash" element={<Trash />} />
+            <Route path="/share/:token" element={<SharePage />} />
             <Route path="*" element={<NotFound />} />
+
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

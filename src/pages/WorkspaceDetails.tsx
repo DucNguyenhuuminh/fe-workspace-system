@@ -1,37 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   LayoutList, LayoutGrid, MoreVertical, Pencil, Download, Trash2, 
   ArrowLeft, Settings, Loader2, FolderPlus, UserPlus, UserMinus, 
-  ShieldCheck, FolderOpen, UploadCloud, RotateCcw, AlertOctagon 
+  ShieldCheck, FolderOpen, UploadCloud, RotateCcw, AlertOctagon,
+  FolderOutput, Check, ChevronRight, Eye
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AppLayout from "@/components/layout/AppLayout";
 
 import { useWorkspaceDetail } from "@/hooks/use-workspaceDetail"; 
 import { useAuthStore } from "@/stores/authStore";
-import { useTrashStore } from "@/stores/trashStore"; // Lấy loading của trash
+import { useTrashStore } from "@/stores/trashStore"; 
 import { getFileIcon, getFolderIcon, formatBytes, formatDate, FileItem } from "@/utils/fileUtils";
+import { toast } from "sonner";
 
+// --- FILE CONTEXT MENU ---
 const FileContextMenu = ({ 
-  align = "end", 
-  isFolder,
-  onDelete,
-  onRename,
-  onDownload,
-  canEdit
+  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, canEdit
 }: { 
-  align?: "end" | "start";
-  isFolder: boolean;
-  onDelete: () => void;
-  onRename: () => void;
-  onDownload: () => void;
-  canEdit: boolean;
+  align?: "end" | "start"; isFolder: boolean; canEdit: boolean;
+  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void;
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -39,17 +33,39 @@ const FileContextMenu = ({
         <MoreVertical className="h-4 w-4" />
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align={align}>
+    <DropdownMenuContent align={align} className="w-48">
+      
+      {/* Nút Xem trước */}
+      {!isFolder && (
+        <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onView(); }}>
+          <Eye className="h-4 w-4" /> Xem trước
+        </DropdownMenuItem>
+      )}
+
+      {/* Nút Đổi tên */}
       {canEdit && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onRename(); }}>
           <Pencil className="h-4 w-4" /> Đổi tên
         </DropdownMenuItem>
       )}
+
+      {/* Nút Di chuyển */}
+      {canEdit && (
+        <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onMove(); }}>
+          <FolderOutput className="h-4 w-4" /> Di chuyển tới...
+        </DropdownMenuItem>
+      )}
+
+      {/* Nút Tải xuống */}
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
           <Download className="h-4 w-4" /> Tải xuống
         </DropdownMenuItem>
       )}
+
+      {canEdit && <DropdownMenuSeparator />}
+      
+      {/* Nút Xóa */}
       {canEdit && (
         <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
           <Trash2 className="h-4 w-4" /> Xóa
@@ -70,34 +86,91 @@ const WorkspaceDetail = () => {
   const [newMemberRole, setNewMemberRole] = useState<"viewer" | "editor">("viewer");
 
   const { 
-    currentWorkspace,
-    currentFolderInfo, 
-    allItems, 
-    trashedItems, 
-    isLoading,
-    createNewFolder,
-    renameFolderItem,
-    renameDocumentItem,
-    deleteFolderItem,
-    deleteDocumentItem,
-    downloadDocument,
-    addMember,
-    removeMember,
-    setUserPermission,
-    fetchFolderContents, 
-    handleBack,
-    fetchTrash,
-    emptyAllTrash,     // ✅ Hàm dọn sạch thùng rác
-    forceDeleteItem,   // ✅ Hàm xóa vĩnh viễn
-    restoreItem        // ✅ Hàm khôi phục
+    currentWorkspace, currentFolderInfo, allItems, trashedItems, isLoading,
+    createNewFolder, renameFolderItem, renameDocumentItem, deleteFolderItem, deleteDocumentItem, 
+    downloadDocument, addMember, removeMember, setUserPermission, fetchFolderContents, handleBack,
+    fetchTrash, emptyAllTrash, forceDeleteItem, restoreItem,
+    viewDocument, moveFolderItem, moveDocumentItem // ✅ Lấy 3 hàm mới từ Hook
   } = useWorkspaceDetail(id);
 
+  // --- PHÂN QUYỀN ---
   const memberInfo = useMemo(() => {
     return currentWorkspace?.members.find(m => m.userId.toString() === user?._id);
   }, [currentWorkspace, user]);
 
   const isAdmin = memberInfo?.role === "ADMIN";
   const isEditor = memberInfo?.permissions === "editor" || isAdmin;
+
+  // --- STATE TÍNH NĂNG DI CHUYỂN ---
+  const [movingItem, setMovingItem] = useState<FileItem | null>(null);
+  const [destPath, setDestPath] = useState<{id: string | null, name: string}[]>([{id: null, name: 'Đang tải...'}]);
+  const [destFolders, setDestFolders] = useState<any[]>([]);
+  const [isFetchingDest, setIsFetchingDest] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+
+  // Khởi tạo tên Root Workspace cho Breadcrumb di chuyển
+  useEffect(() => {
+    if (currentWorkspace && movingItem) {
+      setDestPath([{id: null, name: currentWorkspace.name}]);
+    }
+  }, [currentWorkspace, movingItem]);
+
+  // Fetch danh sách thư mục đích khi đang mở Dialog Move
+  useEffect(() => {
+    if (!movingItem) return;
+    
+    const fetchDestFolders = async () => {
+      setIsFetchingDest(true);
+      try {
+        const currentDestId = destPath[destPath.length - 1].id;
+        const { folderService } = await import('@/services/folderService');
+        // Truyền id (workspaceId) để lấy các folder thuộc Workspace này
+        const res = await folderService.getFolders(currentDestId, id);
+        let folders = res.data.data || [];
+        
+        // Loại bỏ chính thư mục đang di chuyển
+        if (movingItem.kind === "folder") {
+          folders = folders.filter((f: any) => f._id !== movingItem.data._id);
+        }
+        setDestFolders(folders);
+      } catch (error) {
+        toast.error("Không thể tải danh sách thư mục đích.");
+      } finally {
+        setIsFetchingDest(false);
+      }
+    };
+    fetchDestFolders();
+  }, [movingItem, destPath, id]);
+
+  // --- CÁC HÀM XỬ LÝ (Handlers) ---
+  const handleConfirmMove = async () => {
+    if (!movingItem) return;
+    const targetFolderId = destPath[destPath.length - 1].id;
+    const currentParentId = currentFolderInfo?._id || null;
+
+    if (targetFolderId === currentParentId) {
+      toast.warning("Tệp này đã nằm trong thư mục đích rồi!");
+      setMovingItem(null);
+      return;
+    }
+
+    setIsMoving(true);
+    const toastId = toast.loading("Đang di chuyển...");
+    
+    try {
+      if (movingItem.kind === "folder") {
+        await moveFolderItem(movingItem.data._id, targetFolderId, id!);
+      } else {
+        await moveDocumentItem(movingItem.data._id, targetFolderId);
+      }
+      toast.success("Di chuyển thành công!", { id: toastId });
+      setMovingItem(null);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsMoving(false);
+    }
+  };
 
   const handleCreateFolder = () => {
     const folderName = window.prompt("Nhập tên thư mục mới:");
@@ -118,9 +191,15 @@ const WorkspaceDetail = () => {
     }
   };
 
+  const handleView = (item: FileItem) => {
+    if (item.kind === "document") viewDocument(item.data._id);
+  };
+
   const handleDoubleClick = (item: FileItem) => {
     if (item.kind === "folder" && fetchFolderContents) {
       fetchFolderContents(item.data._id);
+    } else {
+      handleView(item); // Nhấp đúp vào File thì Xem trước
     }
   };
 
@@ -141,11 +220,8 @@ const WorkspaceDetail = () => {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => {
-                if (currentFolderInfo && handleBack) {
-                  handleBack(); 
-                } else {
-                  navigate("/workspaces"); 
-                }
+                if (currentFolderInfo && handleBack) handleBack(); 
+                else navigate("/workspaces"); 
               }} 
               className="h-9 w-9 flex items-center justify-center rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
             >
@@ -176,7 +252,7 @@ const WorkspaceDetail = () => {
               <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setViewMode("grid")}><LayoutGrid className="h-4 w-4" /></Button>
             </div>
             
-            {/* ✅ NÚT THÙNG RÁC */}
+            {/* --- NÚT THÙNG RÁC --- */}
             {isEditor && !currentFolderInfo && (
               <Dialog onOpenChange={(open) => { if (open) fetchTrash(); }}>
                 <DialogTrigger asChild>
@@ -185,19 +261,12 @@ const WorkspaceDetail = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[700px] bg-[#f4f6fc] p-6 border-none shadow-2xl">
-                  
-                  {/* ✅ THÊM NÚT LÀM TRỐNG THÙNG RÁC TRÊN HEADER */}
                   <DialogHeader className="mb-4 flex flex-row items-center justify-between pr-6">
                     <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
                       <Trash2 className="h-5 w-5 text-destructive" /> Thùng rác Workspace
                     </DialogTitle>
                     {trashedItems.length > 0 && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        className="gap-2"
-                        onClick={emptyAllTrash} // Gọi thẳng từ hook
-                      >
+                      <Button variant="destructive" size="sm" className="gap-2" onClick={emptyAllTrash}>
                         <AlertOctagon className="h-4 w-4" /> Làm trống
                       </Button>
                     )}
@@ -225,28 +294,11 @@ const WorkspaceDetail = () => {
                                 <p className="text-xs text-slate-500 mt-0.5">Xóa lúc: {display.date}</p>
                               </div>
                             </div>
-                            
-                            {/* ✅ CỤM NÚT KHÔI PHỤC VÀ XÓA VĨNH VIỄN */}
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                                onClick={() => {
-                                  restoreItem(display.id, item.kind);
-                                  // Tự động load lại folder hiện tại để thấy file (tuỳ chọn)
-                                  if (currentFolderInfo) fetchFolderContents(currentFolderInfo._id);
-                                }}
-                              >
+                              <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" onClick={() => restoreItem(display.id, item.kind)}>
                                 <RotateCcw className="h-4 w-4 mr-1" /> Khôi phục
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
-                                title="Xóa vĩnh viễn"
-                                onClick={() => forceDeleteItem(display.id, item.kind)}
-                              >
+                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2" title="Xóa vĩnh viễn" onClick={() => forceDeleteItem(display.id, item.kind)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -265,39 +317,22 @@ const WorkspaceDetail = () => {
                 <DialogTrigger asChild>
                   <Button className="gap-2"><Settings className="h-4 w-4" /> Thành viên</Button>
                 </DialogTrigger>
-                
                 <DialogContent className="sm:max-w-[550px] bg-[#f4f6fc] p-6 border-none shadow-2xl">
-                  {/* ... GIỮ NGUYÊN NHƯ CŨ ... */}
                   <DialogHeader className="mb-4">
                     <DialogTitle className="text-xl font-semibold text-slate-800">Quản lý thành viên nhóm</DialogTitle>
                   </DialogHeader>
-                  
                   <div className="flex gap-3 items-center">
                     <div className="flex-1 relative">
-                      <Input 
-                        placeholder="Nhập email..." 
-                        value={newMemberEmail} 
-                        onChange={(e) => setNewMemberEmail(e.target.value)}
-                        className="w-full h-12 bg-transparent border-2 border-indigo-500 rounded-xl focus-visible:ring-0 focus-visible:border-indigo-600 shadow-sm text-slate-700"
-                      />
+                      <Input placeholder="Nhập email..." value={newMemberEmail} onChange={(e) => setNewMemberEmail(e.target.value)} className="w-full h-12 bg-transparent border-2 border-indigo-500 rounded-xl focus-visible:ring-0 focus-visible:border-indigo-600 shadow-sm text-slate-700"/>
                     </div>
                     <Select value={newMemberRole} onValueChange={(v: any) => setNewMemberRole(v)}>
-                      <SelectTrigger className="w-[120px] h-12 rounded-xl border border-slate-200 bg-transparent text-slate-700 shadow-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="viewer">Viewer</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
-                      </SelectContent>
+                      <SelectTrigger className="w-[120px] h-12 rounded-xl border border-slate-200 bg-transparent text-slate-700 shadow-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="viewer">Viewer</SelectItem><SelectItem value="editor">Editor</SelectItem></SelectContent>
                     </Select>
-                    <Button 
-                      className="h-12 w-14 rounded-xl bg-indigo-500 hover:bg-indigo-600 shadow-sm"
-                      onClick={async () => { await addMember(id!, newMemberEmail, newMemberRole); setNewMemberEmail(""); }}
-                    >
+                    <Button className="h-12 w-14 rounded-xl bg-indigo-500 hover:bg-indigo-600 shadow-sm" onClick={async () => { await addMember(id!, newMemberEmail, newMemberRole); setNewMemberEmail(""); }}>
                       <UserPlus className="h-5 w-5" />
                     </Button>
                   </div>
-
                   <div className="mt-6 border border-slate-200 rounded-2xl divide-y divide-slate-100 max-h-[350px] overflow-auto bg-white shadow-sm">
                     {currentWorkspace?.members.map((m) => (
                       <div key={m.userId.toString()} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
@@ -310,26 +345,16 @@ const WorkspaceDetail = () => {
                             <>
                               <Select value={m.permissions as string} onValueChange={(v: any) => setUserPermission(id!,m.userId.toString(), v)}>
                                 <SelectTrigger className="h-9 w-[100px] text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="viewer">Viewer</SelectItem>
-                                  <SelectItem value="editor">Editor</SelectItem>
-                                </SelectContent>
+                                <SelectContent><SelectItem value="viewer">Viewer</SelectItem><SelectItem value="editor">Editor</SelectItem></SelectContent>
                               </Select>
-                              <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeMember(id!, m.userId.toString())}>
-                                <UserMinus className="h-5 w-5" strokeWidth={1.5} />
-                              </Button>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeMember(id!, m.userId.toString())}><UserMinus className="h-5 w-5" strokeWidth={1.5} /></Button>
                             </>
                           ) : (
-                            <Button variant="ghost" size="icon" disabled className="h-9 w-9 text-red-500 opacity-60 cursor-not-allowed">
-                              <UserMinus className="h-5 w-5" strokeWidth={1.5} />
-                            </Button>
+                            <Button variant="ghost" size="icon" disabled className="h-9 w-9 text-red-500 opacity-60 cursor-not-allowed"><UserMinus className="h-5 w-5" strokeWidth={1.5} /></Button>
                           )}
                         </div>
                       </div>
                     ))}
-                    {(!currentWorkspace?.members || currentWorkspace.members.length === 0) && (
-                      <div className="p-6 text-center text-sm text-slate-500">Chưa có thành viên nào.</div>
-                    )}
                   </div>
                 </DialogContent>
               </Dialog>
@@ -337,7 +362,7 @@ const WorkspaceDetail = () => {
           </div>
         </div>
 
-        {/* --- CONTENT SECTION (Giữ nguyên không đổi) --- */}
+        {/* --- CONTENT SECTION --- */}
         {isLoading ? (
           viewMode === "list" ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -350,10 +375,7 @@ const WorkspaceDetail = () => {
               <div className="divide-y divide-border">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="flex items-center px-6 py-4 animate-pulse">
-                    <div className="flex-1 flex items-center gap-4">
-                      <div className="h-8 w-8 bg-secondary rounded-lg"></div>
-                      <div className="h-4 w-1/3 bg-secondary rounded"></div>
-                    </div>
+                    <div className="flex-1 flex items-center gap-4"><div className="h-8 w-8 bg-secondary rounded-lg"></div><div className="h-4 w-1/3 bg-secondary rounded"></div></div>
                     <div className="w-1/4 h-4 bg-secondary rounded mx-4"></div>
                     <div className="w-24 h-4 bg-secondary rounded mr-10"></div>
                   </div>
@@ -363,11 +385,7 @@ const WorkspaceDetail = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-4 h-32 animate-pulse flex flex-col justify-end">
-                  <div className="h-10 w-10 bg-secondary rounded-lg mb-3"></div>
-                  <div className="h-4 w-3/4 bg-secondary rounded mb-2"></div>
-                  <div className="h-3 w-1/2 bg-secondary rounded"></div>
-                </div>
+                <div key={i} className="rounded-xl border border-border bg-card p-4 h-32 animate-pulse flex flex-col justify-end"><div className="h-10 w-10 bg-secondary rounded-lg mb-3"></div><div className="h-4 w-3/4 bg-secondary rounded mb-2"></div><div className="h-3 w-1/2 bg-secondary rounded"></div></div>
               ))}
             </div>
           )
@@ -375,23 +393,11 @@ const WorkspaceDetail = () => {
           <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed border-border/60 rounded-2xl bg-secondary/20 transition-all hover:bg-secondary/30">
             <div className="relative mb-6">
               <FolderOpen className="h-20 w-20 text-muted-foreground/30" strokeWidth={1} />
-              {isEditor && (
-                <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 shadow-sm">
-                  <UploadCloud className="h-6 w-6 text-primary/60" />
-                </div>
-              )}
+              {isEditor && <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 shadow-sm"><UploadCloud className="h-6 w-6 text-primary/60" /></div>}
             </div>
             <h3 className="text-xl font-semibold text-foreground">Không gian này trống</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm">
-              {isEditor 
-                ? "Bắt đầu tải lên tài liệu hoặc tạo thư mục mới để chia sẻ với nhóm." 
-                : "Nhóm này chưa có tài liệu nào."}
-            </p>
-            {isEditor && (
-              <div className="mt-6 flex gap-3">
-                <Button onClick={handleCreateFolder} className="gap-2"><FolderPlus className="h-4 w-4" /> Tạo thư mục</Button>
-              </div>
-            )}
+            <p className="text-muted-foreground mt-2 max-w-sm">{isEditor ? "Bắt đầu tải lên tài liệu hoặc tạo thư mục mới để chia sẻ với nhóm." : "Nhóm này chưa có tài liệu nào."}</p>
+            {isEditor && <div className="mt-6 flex gap-3"><Button onClick={handleCreateFolder} className="gap-2"><FolderPlus className="h-4 w-4" /> Tạo thư mục</Button></div>}
           </div>
         ) : viewMode === "list" ? (
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
@@ -405,15 +411,9 @@ const WorkspaceDetail = () => {
               {allItems.map((item) => {
                 const display = getDisplayData(item);
                 return (
-                  <div 
-                    key={display.id} 
-                    className="grid grid-cols-12 px-6 py-4 items-center hover:bg-secondary/60 transition-all cursor-pointer group"
-                    onDoubleClick={() => handleDoubleClick(item)}
-                  >
+                  <div key={display.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-secondary/60 transition-all cursor-pointer group" onDoubleClick={() => handleDoubleClick(item)}>
                     <div className="col-span-6 flex items-center gap-4 pr-4">
-                      <div className="p-1.5 rounded-lg bg-background shadow-sm border border-border/50">
-                        <display.Icon className={`h-5 w-5 ${display.color}`} />
-                      </div>
+                      <div className="p-1.5 rounded-lg bg-background shadow-sm border border-border/50"><display.Icon className={`h-5 w-5 ${display.color}`} /></div>
                       <span className="text-sm font-medium text-foreground truncate select-none group-hover:text-primary transition-colors">{display.name}</span>
                     </div>
                     <div className="col-span-3 text-sm text-muted-foreground select-none">{display.date}</div>
@@ -421,9 +421,9 @@ const WorkspaceDetail = () => {
                     <div className="col-span-1 text-right">
                       <FileContextMenu 
                         canEdit={isEditor} isFolder={display.isFolder}
-                        onRename={() => handleRename(item)}
-                        onDelete={() => handleDelete(item)}
-                        onDownload={() => downloadDocument(display.id, display.name)}
+                        onRename={() => handleRename(item)} onDelete={() => handleDelete(item)} onDownload={() => downloadDocument(display.id, display.name)}
+                        onView={() => handleView(item)}
+                        onMove={() => { setDestPath([{id: null, name: currentWorkspace?.name || 'Workspace'}]); setMovingItem(item); }}
                       />
                     </div>
                   </div>
@@ -436,22 +436,16 @@ const WorkspaceDetail = () => {
             {allItems.map((item) => {
               const display = getDisplayData(item);
               return (
-                <div 
-                  key={display.id} 
-                  className="group relative rounded-xl border border-border bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 transition-all cursor-pointer flex flex-col"
-                  onDoubleClick={() => handleDoubleClick(item)}
-                >
+                <div key={display.id} className="group relative rounded-xl border border-border bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 transition-all cursor-pointer flex flex-col" onDoubleClick={() => handleDoubleClick(item)}>
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     <FileContextMenu 
                       canEdit={isEditor} isFolder={display.isFolder}
-                      onRename={() => handleRename(item)}
-                      onDelete={() => handleDelete(item)}
-                      onDownload={() => downloadDocument(display.id, display.name)}
+                      onRename={() => handleRename(item)} onDelete={() => handleDelete(item)} onDownload={() => downloadDocument(display.id, display.name)}
+                      onView={() => handleView(item)}
+                      onMove={() => { setDestPath([{id: null, name: currentWorkspace?.name || 'Workspace'}]); setMovingItem(item); }}
                     />
                   </div>
-                  <div className="p-2 w-fit rounded-lg bg-secondary/50 mb-4 group-hover:scale-110 transition-transform">
-                    <display.Icon className={`h-10 w-10 ${display.color}`} />
-                  </div>
+                  <div className="p-2 w-fit rounded-lg bg-secondary/50 mb-4 group-hover:scale-110 transition-transform"><display.Icon className={`h-10 w-10 ${display.color}`} /></div>
                   <p className="text-sm font-medium text-foreground truncate select-none mt-auto group-hover:text-primary transition-colors" title={display.name}>{display.name}</p>
                   <p className="text-[11px] text-muted-foreground mt-1 select-none">{display.size} • {display.date.split(' ')[0]}</p>
                 </div>
@@ -460,6 +454,70 @@ const WorkspaceDetail = () => {
           </div>
         )}
       </div>
+
+      {/* --- MODAL CHỌN THƯ MỤC ĐÍCH ĐỂ DI CHUYỂN --- */}
+      <Dialog open={!!movingItem} onOpenChange={(open) => !open && setMovingItem(null)}>
+        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-background border-border">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <FolderOutput className="h-5 w-5 text-indigo-500" /> Di chuyển tới...
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Breadcrumb Navigation */}
+          <div className="px-6 py-3 bg-secondary/30 flex items-center gap-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
+            {destPath.map((pathItem, index) => (
+              <div key={pathItem.id || 'root'} className="flex items-center text-sm">
+                <button 
+                  className={`hover:text-indigo-600 transition-colors ${index === destPath.length - 1 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}
+                  onClick={() => setDestPath(prev => prev.slice(0, index + 1))}
+                >
+                  {pathItem.name}
+                </button>
+                {index < destPath.length - 1 && <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />}
+              </div>
+            ))}
+          </div>
+
+          {/* Danh sách Thư mục */}
+          <div className="h-[300px] overflow-y-auto p-2">
+            {isFetchingDest ? (
+              <div className="h-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : destFolders.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                <FolderOpen className="h-12 w-12 opacity-20 mb-2" />
+                <p className="text-sm">Không có thư mục con nào</p>
+              </div>
+            ) : (
+              destFolders.map((folder: any) => (
+                <div 
+                  key={folder._id}
+                  onClick={() => setDestPath(prev => [...prev, { id: folder._id, name: folder.name }])}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary cursor-pointer transition-colors"
+                >
+                  <FolderOpen className="h-5 w-5 text-blue-500 fill-blue-500/20" />
+                  <span className="text-sm font-medium flex-1 truncate">{folder.name}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Nút Hành động */}
+          <DialogFooter className="p-4 border-t bg-secondary/10 flex justify-between sm:justify-between items-center">
+            <span className="text-xs text-muted-foreground pl-2 truncate flex-1 pr-4">
+              Đích: <strong className="text-foreground">{destPath[destPath.length - 1].name}</strong>
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setMovingItem(null)}>Hủy</Button>
+              <Button onClick={handleConfirmMove} disabled={isMoving} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                {isMoving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Di chuyển đến đây
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

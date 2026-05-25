@@ -27,6 +27,9 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     renameDocumentItem,
     deleteDocumentItem,
     downloadDocument,
+    moveFolderItem,
+    moveDocumentItem,
+    viewDocument,
     isLoading: isDriveLoading 
   } = useDriveStore();
 
@@ -40,7 +43,6 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     isLoading: isTrashLoading
   } = useTrashStore();
 
-  // 3. Tự động fetch dữ liệu khi vào trang
   useEffect(() => {
     if (workspaceId) {
       fetchWorkspaceDetail(workspaceId);
@@ -48,7 +50,6 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     }
   }, [workspaceId, fetchWorkspaceDetail, fetchRootItems]);
 
-  // 4. Gộp data (Dùng useMemo để tối ưu hiệu năng)
   const allItems = useMemo(
     () => mergeItems(folders, documents),
     [folders, documents]
@@ -59,7 +60,6 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     [trashedFolders, trashedDocuments]
   );
 
-  // 6. Logic lùi lại 1 bước (Back)
   const handleBack = () => {
     if (currentFolderInfo?.parentId) {
       fetchFolderContents(currentFolderInfo.parentId);
@@ -68,7 +68,6 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     }
   };
 
-  // 7. Bọc lại hàm tạo thư mục để tự động nhét parentId và workspaceId
   const handleCreateFolder = (name: string) => {
     createNewFolder(name, workspaceId || null, currentFolderInfo?._id || null);
   };
@@ -121,12 +120,13 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
     renameDocumentItem,
     deleteDocumentItem,
     downloadDocument,
+    moveFolderItem,
+    moveDocumentItem,
+    viewDocument,
 
     addMember,
     removeMember,
     setUserPermission,
     deleteWorkspace,
-
-
   };
 };

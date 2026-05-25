@@ -3,7 +3,6 @@ import { useDriveStore } from '@/stores/driveStore';
 import { mergeItems } from '@/utils/fileUtils';
 
 export const useMySpace = () => {
-  // 1. Destructuring: Lấy tất cả những gì cần thiết từ store ra để code gọn và không bị lỗi "undefined"
   const {
     folders,
     documents,
@@ -17,6 +16,9 @@ export const useMySpace = () => {
     deleteFolderItem,
     deleteDocumentItem,
     downloadDocument,
+    moveFolderItem,
+    moveDocumentItem,
+    viewDocument,
   } = useDriveStore();
 
   useEffect(() => {
@@ -51,6 +53,9 @@ export const useMySpace = () => {
     renameDocumentItem,
     deleteFolderItem,
     deleteDocumentItem,
-    downloadDocument
+    downloadDocument,
+    moveFolderItem,
+    moveDocumentItem,
+    viewDocument
   };
 };

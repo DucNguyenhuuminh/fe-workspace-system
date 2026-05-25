@@ -27,7 +27,8 @@ export interface ETagPart {
 export interface MergeUploadRequest {
   uploadId: string;
   etags: ETagPart[];          
-  objectName: string;       
+  objectName: string; 
+  minioObjectPath: string;     
   filename: string;
   totalChunks: number;
   mimeType: string;
@@ -52,6 +53,7 @@ export interface InitUploadResponse {
   data: {
     uploadId: string;
     objectName: string;
+    minioObjectPath: string; 
     presignedUrls: string[]; 
     meta?: any;
   };

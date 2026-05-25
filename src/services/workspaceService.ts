@@ -36,22 +36,7 @@ export const workspaceService = {
   },
 
   setUserPermission: async (workspaceId: string, targetUserId: string, permissions: "viewer" | "editor"): Promise<void> => {
-    await api.put(`/workspaces/${workspaceId}/members/${targetUserId}/permission`,{permissions:permissions});
+    await api.patch(`/workspaces/${workspaceId}/members/${targetUserId}/permission`,{permissions:permissions});
     triggerNotiRefresh();
-  },
-
-  getWorkspaceTrashedItems: async (workspaceId?: string | null) => {
-    const params: any = {};
-    if (workspaceId) params.workspaceId = workspaceId;
-
-    const [foldersRes, filesRes] = await Promise.all([
-      api.get("/folders/trash", { params }),
-      api.get("/files/trash", { params })
-    ]);
-
-    return {
-      folders: foldersRes.data.data || [],
-      documents: filesRes.data.data || []
-    };
-  },
+  }
 };
