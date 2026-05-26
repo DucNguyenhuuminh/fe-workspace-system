@@ -19,7 +19,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      'hardly-buyer-treaty-atom.trycloudflare.com'
+      'fe-workspace-system.vercel.app/'
     ]
   }
 });

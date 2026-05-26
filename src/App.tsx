@@ -18,6 +18,7 @@ import Trash from "./pages/Trash";
 import AdminLayout from "@/components/layout/AdminLayout";
 import AdminDashboard from "@/pages/AdminDashboard";
 import SharePage from "@/pages/SharePage";
+import InvitePage from "@/pages/InvitePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/trash" element={<Trash />} />
             <Route path="/share/:token" element={<SharePage />} />
+            <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="*" element={<NotFound />} />
 
             <Route path="/admin" element={<AdminLayout />}>

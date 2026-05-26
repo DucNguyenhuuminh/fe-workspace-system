@@ -4,7 +4,7 @@ import {
   LayoutList, LayoutGrid, MoreVertical, Pencil, Download, Trash2, 
   ArrowLeft, Settings, Loader2, FolderPlus, UserPlus, UserMinus, 
   ShieldCheck, FolderOpen, UploadCloud, RotateCcw, AlertOctagon,
-  FolderOutput, Check, ChevronRight, Eye
+  FolderOutput, Check, ChevronRight, Eye, Link 
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AppLayout from "@/components/layout/AppLayout";
 
+// ✅ IMPORT 2 MODALS MỚI
+import InviteManagerModal from "@/components/workspace/InviteManagerModal";
+import ShareModal from "@/components/share/ShareModal";
+
 import { useWorkspaceDetail } from "@/hooks/use-workspaceDetail"; 
 import { useAuthStore } from "@/stores/authStore";
 import { useTrashStore } from "@/stores/trashStore"; 
@@ -22,10 +26,11 @@ import { toast } from "sonner";
 
 // --- FILE CONTEXT MENU ---
 const FileContextMenu = ({ 
-  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, canEdit
+  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, onShare, canEdit
 }: { 
   align?: "end" | "start"; isFolder: boolean; canEdit: boolean;
-  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void;
+  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void; 
+  onShare: () => void; // ✅ THÊM PROP onShare
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -39,6 +44,13 @@ const FileContextMenu = ({
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onView(); }}>
           <Eye className="h-4 w-4" /> Xem trước
+        </DropdownMenuItem>
+      )}
+
+      {/* ✅ Nút Chia Sẻ File */}
+      {!isFolder && (
+        <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onShare(); }}>
+          <Link className="h-4 w-4" /> Chia sẻ
         </DropdownMenuItem>
       )}
 
@@ -90,7 +102,7 @@ const WorkspaceDetail = () => {
     createNewFolder, renameFolderItem, renameDocumentItem, deleteFolderItem, deleteDocumentItem, 
     downloadDocument, addMember, removeMember, setUserPermission, fetchFolderContents, handleBack,
     fetchTrash, emptyAllTrash, forceDeleteItem, restoreItem,
-    viewDocument, moveFolderItem, moveDocumentItem // ✅ Lấy 3 hàm mới từ Hook
+    viewDocument, moveFolderItem, moveDocumentItem
   } = useWorkspaceDetail(id);
 
   // --- PHÂN QUYỀN ---
@@ -101,12 +113,18 @@ const WorkspaceDetail = () => {
   const isAdmin = memberInfo?.role === "ADMIN";
   const isEditor = memberInfo?.permissions === "editor" || isAdmin;
 
-  // --- STATE TÍNH NĂNG DI CHUYỂN ---
+  // --- STATE MODALS ---
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  
+  // State tính năng di chuyển
   const [movingItem, setMovingItem] = useState<FileItem | null>(null);
   const [destPath, setDestPath] = useState<{id: string | null, name: string}[]>([{id: null, name: 'Đang tải...'}]);
   const [destFolders, setDestFolders] = useState<any[]>([]);
   const [isFetchingDest, setIsFetchingDest] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
+
+  // ✅ State tính năng chia sẻ File
+  const [shareItem, setShareItem] = useState<FileItem | null>(null);
 
   // Khởi tạo tên Root Workspace cho Breadcrumb di chuyển
   useEffect(() => {
@@ -124,11 +142,9 @@ const WorkspaceDetail = () => {
       try {
         const currentDestId = destPath[destPath.length - 1].id;
         const { folderService } = await import('@/services/folderService');
-        // Truyền id (workspaceId) để lấy các folder thuộc Workspace này
         const res = await folderService.getFolders(currentDestId, id);
         let folders = res.data.data || [];
         
-        // Loại bỏ chính thư mục đang di chuyển
         if (movingItem.kind === "folder") {
           folders = folders.filter((f: any) => f._id !== movingItem.data._id);
         }
@@ -199,7 +215,7 @@ const WorkspaceDetail = () => {
     if (item.kind === "folder" && fetchFolderContents) {
       fetchFolderContents(item.data._id);
     } else {
-      handleView(item); // Nhấp đúp vào File thì Xem trước
+      handleView(item); 
     }
   };
 
@@ -243,6 +259,20 @@ const WorkspaceDetail = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* ✅ NÚT TẠO LINK MỜI THÀNH VIÊN VÀO WORKSPACE */}
+            {isAdmin && !currentFolderInfo && (
+              <>
+                <Button onClick={() => setIsInviteModalOpen(true)} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                  <Link className="h-4 w-4" /> Link mời
+                </Button>
+                <InviteManagerModal 
+                  isOpen={isInviteModalOpen} 
+                  onClose={() => setIsInviteModalOpen(false)} 
+                  workspaceId={id!} 
+                />
+              </>
+            )}
+
             {isEditor && (
               <Button onClick={handleCreateFolder} className="gap-2"><FolderPlus className="h-4 w-4" /> Tạo thư mục</Button>
             )}
@@ -423,6 +453,8 @@ const WorkspaceDetail = () => {
                         canEdit={isEditor} isFolder={display.isFolder}
                         onRename={() => handleRename(item)} onDelete={() => handleDelete(item)} onDownload={() => downloadDocument(display.id, display.name)}
                         onView={() => handleView(item)}
+                        // ✅ GẮN SỰ KIỆN SHARE VÀ MOVE
+                        onShare={() => setShareItem(item)}
                         onMove={() => { setDestPath([{id: null, name: currentWorkspace?.name || 'Workspace'}]); setMovingItem(item); }}
                       />
                     </div>
@@ -442,6 +474,8 @@ const WorkspaceDetail = () => {
                       canEdit={isEditor} isFolder={display.isFolder}
                       onRename={() => handleRename(item)} onDelete={() => handleDelete(item)} onDownload={() => downloadDocument(display.id, display.name)}
                       onView={() => handleView(item)}
+                      // ✅ GẮN SỰ KIỆN SHARE VÀ MOVE
+                      onShare={() => setShareItem(item)}
                       onMove={() => { setDestPath([{id: null, name: currentWorkspace?.name || 'Workspace'}]); setMovingItem(item); }}
                     />
                   </div>
@@ -454,6 +488,14 @@ const WorkspaceDetail = () => {
           </div>
         )}
       </div>
+
+      {/* --- MODAL CHIA SẺ FILE --- */}
+      <ShareModal 
+        isOpen={!!shareItem} 
+        onClose={() => setShareItem(null)}
+        fileId={shareItem?.data._id || null}
+        fileName={shareItem ? (shareItem.kind === "document" ? shareItem.data.originalName : shareItem.data.name) : ''}
+      />
 
       {/* --- MODAL CHỌN THƯ MỤC ĐÍCH ĐỂ DI CHUYỂN --- */}
       <Dialog open={!!movingItem} onOpenChange={(open) => !open && setMovingItem(null)}>
