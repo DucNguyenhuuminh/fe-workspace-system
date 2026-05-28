@@ -19,14 +19,14 @@ export interface InitUploadRequest {
   // Route này BE không cần hashString nữa nên ta bỏ đi
 }
 
-export interface ETagPart {
-  partNumber: number;
-  etag: string;
-}
+// export interface ETagPart {
+//   partNumber: number;
+//   etag: string;
+// }
 
 export interface MergeUploadRequest {
   uploadId: string;
-  etags: ETagPart[];          
+  // etags: ETagPart[];          
   objectName: string; 
   minioObjectPath: string;     
   filename: string;

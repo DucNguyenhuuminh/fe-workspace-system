@@ -8,8 +8,8 @@ import type {
   InitUploadResponse,
   MergeUploadRequest,
   MergeUploadResponse,
-  UploadProgressCallback,
-  ETagPart
+  UploadProgressCallback
+  // ETagPart
 } from "@/types/upload.types";
 import { triggerNotiRefresh } from "@/utils/triggerNoti"; 
 
@@ -75,7 +75,7 @@ export const uploadService = {
     const initRes = await api.post<InitUploadResponse>("/files-worker/init", initPayload);
     const { uploadId, objectName, minioObjectPath, presignedUrls } = initRes.data.data;
 
-    const uploadChunk = async (chunkIndex: number): Promise<string> => {
+    const uploadChunk = async (chunkIndex: number): Promise<void> => {
       const start = chunkIndex * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
@@ -88,36 +88,37 @@ export const uploadService = {
 
       if (!res.ok) throw new Error(`Chunk ${chunkIndex + 1} upload failed`);
 
-      let etag = res.headers.get("ETag");
+      // let etag = res.headers.get("ETag");
       
-      if (!etag) {
-        try {
-          etag = res.headers.get("etag");
-        } catch(err) {
-          console.warn(`Không đọc được ETag ở chunk ${chunkIndex + 1}. Hãy kiểm tra cấu hình CORS của MinIO!: ${err}`);
-        }
-        return "";
-      }
-      return etag;
+      // if (!etag) {
+      //   try {
+      //     etag = res.headers.get("etag");
+      //   } catch(err) {
+      //     console.warn(`Không đọc được ETag ở chunk ${chunkIndex + 1}. Hãy kiểm tra cấu hình CORS của MinIO!: ${err}`);
+      //   }
+      //   return "";
+      // }
+      // return etag;
     };
 
-    const etags: ETagPart[] = [];
-
     for (let i = 0; i < totalChunks; i++) {
-      const etagString = await uploadChunk(i);
+      // const etagString = await uploadChunk(i);
       
-      etags.push({
-        partNumber: i + 1,
-        etag: etagString
-      });
+      // etags.push({
+      //   partNumber: i + 1,
+      //   etag: etagString
+      // });
 
-      const uploadProgress = 5 + Math.round(((i + 1) / totalChunks) * 85);
+      // const uploadProgress = 5 + Math.round(((i + 1) / totalChunks) * 85);
+      // onProgress?.(uploadProgress);
+      await uploadChunk(i);
+      const uploadProgress = 5 + Math.round(((i+1)/totalChunks)*85);
       onProgress?.(uploadProgress);
     }
 
     const mergePayload: MergeUploadRequest = {
       uploadId,
-      etags,
+      // etags,
       objectName,
       minioObjectPath: minioObjectPath || objectName,
       filename: file.name,
