@@ -19,7 +19,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      'fe-workspace-system.vercel.app'
+      'fe-workspace-system.vercel.app/'
     ]
   }
 });
