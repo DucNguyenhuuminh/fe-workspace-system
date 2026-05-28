@@ -18,7 +18,7 @@ export const useFileUpload = (context: UploadContext) => {
   const uploadFile = async (file: File) => {
     setIsUploading(true);
     setProgress(0);
-    setUploadingFile(file); // Lưu file vào state
+    setUploadingFile(file);
 
     try {
       const doc = await uploadService.uploadFile(file, {
@@ -47,6 +47,5 @@ export const useFileUpload = (context: UploadContext) => {
     }
   };
 
-  // Trả thêm uploadingFile ra ngoài
   return { uploadFile, progress, isUploading, uploadingFile };
 };

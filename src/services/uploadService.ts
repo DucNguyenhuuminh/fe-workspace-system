@@ -88,12 +88,16 @@ export const uploadService = {
 
       if (!res.ok) throw new Error(`Chunk ${chunkIndex + 1} upload failed`);
 
-      const etag = res.headers.get("ETag")?.replace(/"/g, "") ?? "";
+      let etag = res.headers.get("ETag");
       
       if (!etag) {
-        console.warn(`Không đọc được ETag ở chunk ${chunkIndex + 1}. Hãy kiểm tra cấu hình CORS của MinIO!`);
+        try {
+          etag = res.headers.get("etag");
+        } catch(err) {
+          console.warn(`Không đọc được ETag ở chunk ${chunkIndex + 1}. Hãy kiểm tra cấu hình CORS của MinIO!: ${err}`);
+        }
+        return "";
       }
-      
       return etag;
     };
 
@@ -125,7 +129,6 @@ export const uploadService = {
       folderId,
     };
 
-    // Gọi API Merge trước
     const mergeRes = await api.post<MergeUploadResponse>("/files-worker/merge", mergePayload);
 
     triggerNotiRefresh();

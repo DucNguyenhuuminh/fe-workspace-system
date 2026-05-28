@@ -61,7 +61,7 @@ export interface InitUploadResponse {
 
 export interface MergeUploadResponse {
   message: string;
-  data: Document; // BE trả về thẳng object document nằm trong data
+  data: Document;
 }
 
 // ==================== MISC ====================
