@@ -7,11 +7,13 @@ interface NotiState {
   isLoading: boolean;
   hasMore: boolean;
   page: number;
+  isModalOpen: boolean; 
 
   fetchNotifications: (pageNumber?: number) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNoti: (id: string) => Promise<void>;
+  setModalOpen: (isOpen: boolean) => void;
 }
 
 export const useNotiStore = create<NotiState>((set, get) => ({
@@ -20,6 +22,8 @@ export const useNotiStore = create<NotiState>((set, get) => ({
   isLoading: false,
   hasMore: true,
   page: 1,
+  isModalOpen: false,
+  setModalOpen: (isOpen) => set({ isModalOpen: isOpen }),
 
   // Lấy danh sách (Có hỗ trợ phân trang Load More)
   fetchNotifications: async (pageNumber = 1) => {

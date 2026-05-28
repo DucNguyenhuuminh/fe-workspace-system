@@ -109,8 +109,6 @@ export const uploadService = {
       //   etag: etagString
       // });
 
-      // const uploadProgress = 5 + Math.round(((i + 1) / totalChunks) * 85);
-      // onProgress?.(uploadProgress);
       await uploadChunk(i);
       const uploadProgress = 5 + Math.round(((i+1)/totalChunks)*85);
       onProgress?.(uploadProgress);

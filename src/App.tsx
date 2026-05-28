@@ -44,7 +44,6 @@ const App = () => {
     initializeApp();
   }, [fetchProfile, user]);
 
-  // HIỂN THỊ MÀN HÌNH LOADING TRONG LÚC ĐỢI LẤY THÔNG TIN USER
   if (isInitializing) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -74,7 +73,6 @@ const App = () => {
             <Route path="/share/:token" element={<SharePage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="*" element={<NotFound />} />
-
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
             </Route>
