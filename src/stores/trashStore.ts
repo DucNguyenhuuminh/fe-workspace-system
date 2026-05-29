@@ -36,7 +36,6 @@ export const useTrashStore = create<TrashState>((set, get) => ({
       await trashService.forceDelete(id, kind);
       toast.success("Đã xóa vĩnh viễn");
       
-      // Xóa item khỏi UI ngay lập tức mà không cần gọi lại API
       if (kind === "folder") {
         set((state) => ({ trashedFolders: state.trashedFolders.filter(f => f._id !== id) }));
       } else {

@@ -1,4 +1,5 @@
 import api from "@/api/axiosInstance";
+import { triggerNotiRefresh } from "@/utils/triggerNoti";
 
 export const trashService = {
   getTrashedItems: async (workspaceId?: string | null) => {
@@ -21,6 +22,7 @@ export const trashService = {
       await api.delete(`/folders/${id}/force`);
     } else {
       await api.delete(`/files/${id}/force`);
+      triggerNotiRefresh();
     }
   },
 
@@ -37,6 +39,7 @@ export const trashService = {
       return res.data;
     } else {
       const res = await api.put(`/files/${id}/restore`);
+      triggerNotiRefresh();
       return res.data;
     }
   }

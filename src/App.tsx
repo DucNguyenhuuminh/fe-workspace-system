@@ -55,7 +55,6 @@ const App = () => {
     );
   }
 
-  // APP CHÍNH (Được render khi đã check user xong)
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
