@@ -32,7 +32,6 @@ export const useNotiStore = create<NotiState>((set, get) => ({
       const data = await notiService.getNotifications(pageNumber, 20);
       
       set((state) => ({
-        // Nếu là trang 1 thì ghi đè, nếu trang > 1 thì nối mảng (cho tính năng cuộn)
         notifications: pageNumber === 1 
           ? data.notifications 
           : [...state.notifications, ...data.notifications],

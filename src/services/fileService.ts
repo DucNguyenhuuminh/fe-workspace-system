@@ -3,7 +3,6 @@ import type { Document } from "@/types";
 import { triggerNotiRefresh } from "@/utils/triggerNoti";
 
 export const fileService = {
-  // Thêm param truyền workspaceId và folderId
   getFiles: async (params?: { workspaceId?: string | null; folderId?: string | null }): Promise<Document[]> => {
     const res = await api.get("/files", { params });
     return res.data.data || [];

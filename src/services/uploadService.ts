@@ -129,9 +129,7 @@ export const uploadService = {
     };
 
     const mergeRes = await api.post<MergeUploadResponse>("/files-worker/merge", mergePayload);
-
     triggerNotiRefresh();
-
     onProgress?.(100);
     return mergeRes.data.data;
   },

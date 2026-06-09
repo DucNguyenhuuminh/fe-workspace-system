@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { 
   LayoutList, LayoutGrid, MoreVertical, Pencil, Download, Trash2, 
-  FolderPlus, ArrowLeft, FolderOpen, UploadCloud, FolderOutput, Check, Loader2, ChevronRight, Eye, Link
+  FolderPlus, ArrowLeft, FolderOpen, UploadCloud, FolderOutput, Check, Loader2, ChevronRight, Eye, Link, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import AppLayout from "@/components/layout/AppLayout";
 import ShareModal from "@/components/share/ShareModal";
+import CommentModal from "@/components/comment/CommentModal";
 import { toast } from "sonner"; 
 
 import { useMySpace } from "@/hooks/use-mySpace"; 
@@ -16,10 +17,10 @@ import type { FileItem } from "@/utils/fileUtils";
 
 // --- CONTEXT MENU ---
 const FileContextMenu = ({ 
-  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, onShare
+  align = "end", isFolder, onDelete, onRename, onDownload, onMove, onView, onShare, onComment
 }: { 
   align?: "end" | "start"; isFolder: boolean;
-  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void; onShare: () => void;
+  onDelete: () => void; onRename: () => void; onDownload: () => void; onMove: () => void; onView: () => void; onShare: () => void; onComment: () => void;
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -33,6 +34,11 @@ const FileContextMenu = ({
           <Eye className="h-4 w-4" /> Xem trước
         </DropdownMenuItem>
       )}
+      {!isFolder && (
+        <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onComment(); }}>
+          <MessageSquare className="h-4 w-4" /> Bình luận
+        </DropdownMenuItem>
+      )}
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onRename(); }}>
         <Pencil className="h-4 w-4" /> Đổi tên
       </DropdownMenuItem>
@@ -42,7 +48,6 @@ const FileContextMenu = ({
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onShare(); }}>
         <Link className="h-4 w-4" /> Chia sẻ
       </DropdownMenuItem>
-      
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
           <Download className="h-4 w-4" /> Tải xuống
@@ -76,6 +81,7 @@ const MySpace = () => {
   const [isFetchingDest, setIsFetchingDest] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
   const [shareItem, setShareItem] = useState<FileItem | null>(null);
+  const [commentFileId, setCommentFileId] = useState<string | null>(null);
 
   // Lấy danh sách thư mục đích khi đang mở Dialog
   useEffect(() => {
@@ -318,6 +324,7 @@ const MySpace = () => {
                         }}
                         onView={() => {handleView(item)}}
                         onShare={() => setShareItem(item)}
+                        onComment={() => setCommentFileId(item.data._id)}
                       />
                     </div>
                   </div>
@@ -349,6 +356,7 @@ const MySpace = () => {
                       }}
                       onView={() => {handleView(item)}}
                       onShare={() => setShareItem(item)}
+                      onComment={() => setCommentFileId(item.data._id)}
                     />
                   </div>
                   <div className="p-2 w-fit rounded-lg bg-secondary/50 mb-4 group-hover:scale-110 transition-transform">
@@ -362,6 +370,13 @@ const MySpace = () => {
           </div>
         )}
       </div>
+
+      {/* MODAL BÌNH LUẬN TÀI LIỆU */}
+      <CommentModal 
+        isOpen={!!commentFileId} 
+        onClose={() => setCommentFileId(null)} 
+        fileId={commentFileId} 
+      />
 
       {/* --- MODAL CHỌN THƯ MỤC ĐÍCH ĐỂ DI CHUYỂN --- */}
       <Dialog open={!!movingItem} onOpenChange={(open) => !open && setMovingItem(null)}>

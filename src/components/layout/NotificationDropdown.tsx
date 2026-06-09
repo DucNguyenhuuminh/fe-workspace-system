@@ -15,8 +15,6 @@ import { NotificationModal } from "@/components/notification/NotiModal";
 const getNotiStyle = (type: string) => {
   switch (type) {
     case 'FILE_MERGED':
-    case 'FILE_RESTORED':
-      return { icon: File, color: "text-blue-500", bg: "bg-blue-500/10" };
     case 'WORKSPACE_CREATED':
     case 'WORKSPACE_DELETED':
       return { icon: Folder, color: "text-emerald-500", bg: "bg-emerald-500/10" };

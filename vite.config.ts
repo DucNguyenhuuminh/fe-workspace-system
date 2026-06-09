@@ -16,10 +16,10 @@ export default defineConfig({
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
-  },
-  server: {
-    allowedHosts: [
-      'fe-workspace-system.vercel.app/'
-    ]
   }
+  // server: {
+  //   allowedHosts: [
+  //     'fe-workspace-system.vercel.app/'
+  //   ]
+  // }
 });
