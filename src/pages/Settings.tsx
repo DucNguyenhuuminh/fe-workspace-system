@@ -73,8 +73,8 @@ const SettingsPage = () => {
     <AppLayout>
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Cài đặt</h1>
-          <p className="text-muted-foreground text-sm mt-1">Quản lý tài khoản và tùy chỉnh hệ thống</p>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground text-sm mt-1">Account management and system customization</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -88,12 +88,12 @@ const SettingsPage = () => {
                 <h3 className="text-lg font-semibold text-foreground">{name || "User"}</h3>
                 <p className="text-sm text-muted-foreground">{email}</p>
                 <div className="mt-2 text-xs px-2 py-1 bg-secondary rounded-full font-medium">
-                  Vai trò: {user?.globalRole === "SYSTEM_ADMIN" ? "Quản trị viên" : "Người dùng"}
+                  Role: {user?.globalRole === "SYSTEM_ADMIN" ? "Administrator" : "User"}
                 </div>
               </div>
             </div>
             
-            <div className="rounded-xl border border-border bg-card p-6">
+            {/* <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-3 mb-4">
                 <HardDrive className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-base font-semibold text-foreground">Dung lượng lưu trữ</h2>
@@ -104,7 +104,7 @@ const SettingsPage = () => {
                 <span className="text-foreground font-medium">{totalStorage} GB</span>
               </div>
               <Button variant="outline" size="sm" className="w-full mt-4">Nâng cấp dung lượng</Button>
-            </div>
+            </div> */}
           </div>
 
           {/* Cột phải */}
@@ -112,11 +112,11 @@ const SettingsPage = () => {
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-3 mb-6">
                 <User className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold text-foreground">Thông tin cá nhân</h2>
+                <h2 className="text-lg font-semibold text-foreground">Personal information</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Họ và tên</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Full name</label>
                   <Input 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
@@ -132,7 +132,7 @@ const SettingsPage = () => {
               <div className="mt-6">
                 <Button onClick={handleSaveProfile} disabled={isUpdatingProfile} className="gap-2">
                   {isUpdatingProfile && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Lưu thay đổi
+                  Save changes
                 </Button>
               </div>
             </div>
@@ -140,11 +140,11 @@ const SettingsPage = () => {
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Shield className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold text-foreground">Bảo mật</h2>
+                <h2 className="text-lg font-semibold text-foreground">Security</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Mật khẩu hiện tại</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Current password</label>
                   <Input 
                     type="password" 
                     placeholder="••••••••" 
@@ -156,7 +156,7 @@ const SettingsPage = () => {
                 </div>
                 <div className="hidden md:block" />
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Mật khẩu mới</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">New password</label>
                   <Input 
                     type="password" 
                     placeholder="••••••••" 
@@ -167,7 +167,7 @@ const SettingsPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Xác nhận mật khẩu mới</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Confirm new password</label>
                   <Input 
                     type="password" 
                     placeholder="••••••••" 
@@ -179,19 +179,19 @@ const SettingsPage = () => {
                 </div>
               </div>
               <div className="mt-6 flex items-center justify-between py-3 border-t border-border">
-                <div>
+                {/* <div>
                   <p className="text-sm font-medium text-foreground">Xác thực 2 lớp (2FA)</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Bảo vệ tài khoản bằng mã xác thực bổ sung</p>
-                </div>
+                </div> */}
                 <Switch checked={twoFactor} onCheckedChange={setTwoFactor} />
               </div>
               <div className="mt-6 flex gap-3">
                 <Button onClick={handleChangePassword} disabled={isChangingPassword} className="gap-2">
                   {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Đổi mật khẩu
+                  Change password
                 </Button>
                 <Button variant="outline" className="text-destructive" onClick={handleLogout}>
-                  Đăng xuất khỏi thiết bị này
+                  Log out
                 </Button>
               </div>
             </div>

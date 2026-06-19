@@ -62,13 +62,13 @@ export function NotificationDropdown() {
         <DropdownMenuContent align="end" className="w-[380px] p-0 flex flex-col shadow-2xl border-border animate-in fade-in zoom-in-95 duration-200">
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center justify-between bg-card sticky top-0 z-10">
-            <h3 className="font-semibold text-sm">Thông báo</h3>
+            <h3 className="font-semibold text-sm">Notification</h3>
             {unreadCount > 0 && (
               <button 
                 onClick={(e) => { e.preventDefault(); markAllAsRead(); }}
                 className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
               >
-                <Check className="h-3 w-3" /> Đánh dấu đã đọc tất cả
+                <Check className="h-3 w-3" /> Mark as read
               </button>
             )}
           </div>
@@ -77,7 +77,7 @@ export function NotificationDropdown() {
           {notifications.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
               <Bell className="h-10 w-10 opacity-10" />
-              <p>Bạn chưa có thông báo nào</p>
+              <p>You haven't received any notifications yet</p>
             </div>
           ) : (
             <ScrollArea className="max-h-[420px]">
@@ -137,7 +137,7 @@ export function NotificationDropdown() {
                 onClick={() => setModalOpen(true)} 
                 className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors w-full py-1"
               >
-                Xem tất cả thông báo
+                View all notifications
               </button>
             </div>
         </DropdownMenuContent>

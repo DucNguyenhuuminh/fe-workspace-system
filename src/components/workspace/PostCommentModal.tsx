@@ -56,19 +56,19 @@ export default function PostComments({ workspaceId, postId, onCommentAdded }: Po
       fetchComments();
       onCommentAdded();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi tạo bình luận");
+      toast.error(error.response?.data?.message || "Error create comment");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!window.confirm("Xóa bình luận này?")) return;
+    if (!window.confirm("Delete this comment?")) return;
     try {
       await postService.deleteComment(workspaceId, postId, commentId);
       fetchComments();
     } catch (error: any) {
-      toast.error("Lỗi xóa bình luận");
+      toast.error("Error delete commengt");
     }
   };
 
@@ -91,21 +91,21 @@ export default function PostComments({ workspaceId, postId, onCommentAdded }: Po
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="bg-secondary/40 rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full">
-              <p className="text-xs font-semibold mb-0.5">{c.createdBy?.username || "Thành viên"}</p>
+              <p className="text-xs font-semibold mb-0.5">{c.createdBy?.username || "Member"}</p>
               <p className="text-[13px] text-foreground/90 whitespace-pre-wrap">{c.content}</p>
             </div>
             <div className="flex items-center gap-3 mt-1 ml-2">
               <span className="text-[10px] text-muted-foreground">
-                {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: vi })}
+                {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true})}
               </span>
-              {!isReply && (
+              {(
                 <button onClick={() => openReply(c._id)} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">
-                  Phản hồi
+                  Response
                 </button>
               )}
               {isOwner && (
                 <button onClick={() => handleDelete(c._id)} className="text-[11px] font-medium text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                  Xóa
+                  Delete
                 </button>
               )}
             </div>
@@ -118,12 +118,12 @@ export default function PostComments({ workspaceId, postId, onCommentAdded }: Po
             <Textarea 
               ref={replyInputRef}
               value={replyContent} onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Viết phản hồi..." className="min-h-[36px] h-9 text-xs py-2"
+              placeholder="Write reply..." className="min-h-[36px] h-9 text-xs py-2"
             />
             <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => handleSubmit(c._id)} disabled={isSubmitting}>
               <Send className="h-3 w-3" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={() => setReplyingTo(null)}>Hủy</Button>
+            <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={() => setReplyingTo(null)}>Cancel</Button>
           </div>
         )}
 
@@ -146,7 +146,7 @@ export default function PostComments({ workspaceId, postId, onCommentAdded }: Po
         </Avatar>
         <div className="flex-1 relative">
           <Textarea 
-            placeholder="Viết bình luận..." 
+            placeholder="Write comment..." 
             value={newComment} onChange={(e) => setNewComment(e.target.value)}
             className="min-h-[36px] h-[36px] text-sm py-2 pr-10 resize-none bg-secondary/30"
           />

@@ -29,7 +29,7 @@ api.interceptors.response.use(
       const currentPath = window.location.pathname;
       if (currentPath !== "/login" && currentPath !== "/register") {
         
-        toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+        toast.error("Your login session has expired, please log in again!");
 
         useAuthStore.getState().logout();
 

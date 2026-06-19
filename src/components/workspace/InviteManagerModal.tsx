@@ -34,7 +34,7 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
     try {
       const data = await workspaceInviteService.getInviteLinks(workspaceId);
       setLinks(data);
-    } catch (e) { toast.error("Lỗi tải danh sách link"); }
+    } catch (e) { toast.error("Error loading the list of links"); }
     finally { setIsLoading(false); }
   };
 
@@ -43,7 +43,7 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
     try {
       const data = await workspaceInviteService.getJoinRequests(workspaceId);
       setRequests(data);
-    } catch (e) { toast.error("Lỗi tải danh sách yêu cầu"); }
+    } catch (e) { toast.error("Error loading request list"); }
     finally { setIsLoading(false); }
   };
 
@@ -53,42 +53,42 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
         expiresInHours: expiresIn === "0" ? null : expiresIn,
         autoApprove
       });
-      toast.success("Tạo link thành công");
+      toast.success("Link created successfully");
       fetchLinks();
-    } catch (e) { toast.error("Tạo link thất bại"); }
+    } catch (e) { toast.error("Link creation failed"); }
   };
 
   const handleReviewRequest = async (reqId: string, action: 'approve' | 'reject') => {
     try {
       await workspaceInviteService.reviewRequest(workspaceId, reqId, action);
-      toast.success(`Đã ${action === 'approve' ? 'chấp nhận' : 'từ chối'} yêu cầu`);
+      toast.success(`Đã ${action === 'approve' ? 'approve' : 'reject'} request`);
       fetchRequests();
-    } catch (e) { toast.error("Xử lý thất bại"); }
+    } catch (e) { toast.error("Failure handling"); }
   };
 
   const handleApproveAll = async () => {
     try {
       const res = await workspaceInviteService.approveAllRequests(workspaceId);
-      toast.success(`Đã phê duyệt ${res.approved} yêu cầu`);
+      toast.success(`${res.approved} request has been approved`);
       fetchRequests();
     } catch (e) { toast.error("Xử lý thất bại"); }
   };
 
   const handleCopy = (token: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/invite/${token}`);
-    toast.success("Đã copy link!");
+    toast.success("The link has been copied");
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[650px] bg-slate-50">
         <DialogHeader>
-          <DialogTitle className="text-xl">Quản lý lời mời tham gia</DialogTitle>
+          <DialogTitle className="text-xl">Manage invitations</DialogTitle>
         </DialogHeader>
 
         {/* --- TABS --- */}
         <div className="flex gap-2 border-b border-slate-200 pb-2">
-          <button onClick={() => setActiveTab('links')} className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors ${activeTab === 'links' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}`}>Danh sách Link</button>
+          <button onClick={() => setActiveTab('links')} className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors ${activeTab === 'links' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}`}>List of Links</button>
           <button onClick={() => setActiveTab('requests')} className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors flex items-center gap-2 ${activeTab === 'requests' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}`}>
             Duyệt yêu cầu
             {requests.length > 0 && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{requests.length}</span>}
@@ -100,21 +100,21 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-end gap-4">
               <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-medium text-slate-500">Hết hạn sau</label>
+                <label className="text-xs font-medium text-slate-500">Expires after</label>
                 <Select value={expiresIn} onValueChange={setExpiresIn}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">Không giới hạn</SelectItem>
-                    <SelectItem value="24">1 ngày</SelectItem>
-                    <SelectItem value="168">7 ngày</SelectItem>
+                    <SelectItem value="0">Never</SelectItem>
+                    <SelectItem value="24">1 day</SelectItem>
+                    <SelectItem value="168">7 days</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center gap-2 pb-2">
                 <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} className="rounded text-indigo-600 w-4 h-4" />
-                <label className="text-sm font-medium text-slate-700">Duyệt tự động</label>
+                <label className="text-sm font-medium text-slate-700">Automated approve</label>
               </div>
-              <Button onClick={handleCreateLink} className="bg-indigo-600"><Link className="h-4 w-4 mr-2"/> Tạo mới</Button>
+              <Button onClick={handleCreateLink} className="bg-indigo-600"><Link className="h-4 w-4 mr-2"/> Create</Button>
             </div>
 
             <div className="max-h-[300px] overflow-y-auto space-y-2">
@@ -126,7 +126,7 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
                       <span className="text-sm font-medium">.../invite/{link.token.substring(0,8)}...</span>
                       {link.autoApprove && <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold">Auto</span>}
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">Tạo lúc: {formatDate(link.createdAt)}</p>
+                    <p className="text-xs text-slate-400 mt-1">Create at: {formatDate(link.createdAt)}</p>
                   </div>
                   {!link.isRevoked && (
                     <div className="flex gap-1">
@@ -146,13 +146,13 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
              {requests.length > 0 && (
                 <div className="flex justify-end">
                   <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleApproveAll}>
-                    <CheckCircle2 className="h-4 w-4 mr-2" /> Duyệt tất cả
+                    <CheckCircle2 className="h-4 w-4 mr-2" /> Approve all
                   </Button>
                 </div>
              )}
             <div className="max-h-[350px] overflow-y-auto space-y-2">
               {isLoading ? <div className="text-center py-4"><Loader2 className="h-5 w-5 animate-spin mx-auto text-indigo-500"/></div> : 
-               requests.length === 0 ? <p className="text-center text-slate-500 text-sm py-8">Không có yêu cầu nào đang chờ.</p> :
+               requests.length === 0 ? <p className="text-center text-slate-500 text-sm py-8">No pending requests</p> :
                requests.map(req => (
                 <div key={req._id} className="bg-white p-3 rounded-lg border flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
@@ -163,8 +163,8 @@ const InviteManagerModal = ({ isOpen, onClose, workspaceId }: InviteManagerModal
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleReviewRequest(req._id, 'reject')}><X className="h-4 w-4 mr-1"/> Từ chối</Button>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleReviewRequest(req._id, 'approve')}><Check className="h-4 w-4 mr-1"/> Chấp thuận</Button>
+                    <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleReviewRequest(req._id, 'reject')}><X className="h-4 w-4 mr-1"/> Reject</Button>
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleReviewRequest(req._id, 'approve')}><Check className="h-4 w-4 mr-1"/> Approve</Button>
                   </div>
                 </div>
               ))}

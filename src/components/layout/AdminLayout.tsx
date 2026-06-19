@@ -58,14 +58,14 @@ const AdminLayout = () => {
             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="font-medium text-sm">Về trang User</span>
+            <span className="font-medium text-sm">Back to User</span>
           </button>
           <button 
             onClick={logout}
             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all"
           >
             <LogOut className="h-5 w-5" />
-            <span className="font-medium text-sm">Đăng xuất</span>
+            <span className="font-medium text-sm">LogOut</span>
           </button>
         </div>
       </aside>

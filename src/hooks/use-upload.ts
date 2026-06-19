@@ -27,7 +27,7 @@ export const useFileUpload = (context: UploadContext) => {
         onProgress: setProgress,
       });
 
-      toast.success(`"${doc.originalName}" đã tải lên thành công!`);
+      toast.success(`"${doc.originalName}" has been uploaded successfully`);
       
       if (context.folderId) {
         await fetchFolderContents(context.folderId);
@@ -36,7 +36,7 @@ export const useFileUpload = (context: UploadContext) => {
       }
       
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Tải lên thất bại, vui lòng thử lại");
+      toast.error(error.response?.data?.message || "Upload failed, please try again");
       console.error(error);
     } finally {
       setTimeout(() => {

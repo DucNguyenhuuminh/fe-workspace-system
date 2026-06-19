@@ -12,7 +12,7 @@ export const useWakeUpRefresh = () => {
     const handleWakeUp = () => {
       // Chỉ chạy nếu tab đang hiển thị và người dùng đã đăng nhập
       if (document.visibilityState === 'visible' && isAuthenticated) {
-        console.log("Màn hình đã thức dậy! Đang làm mới dữ liệu...");
+        console.log("The screen has woken up! Refreshing data...");
         
         // 1. Cập nhật lại thông tin user (đề phòng bị đổi quyền hoặc xóa tài khoản)
         fetchProfile();

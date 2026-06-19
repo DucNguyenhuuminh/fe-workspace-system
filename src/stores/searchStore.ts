@@ -53,11 +53,11 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       });
     } catch (error: any) {
       console.error("Search error:", error);
-      toast.error(error.response?.data?.message || "Lỗi khi tìm kiếm tài liệu");
+      toast.error(error.response?.data?.message || "Error when searching for documents");
       set({ 
         results: [], 
         total: 0, 
-        error: error.message || 'Lỗi tìm kiếm không xác định' 
+        error: error.message || 'Unknown search error' 
       });
     } finally {
       set({ isLoading: false });

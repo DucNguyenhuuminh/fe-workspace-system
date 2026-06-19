@@ -1,10 +1,14 @@
 import api from "@/api/axiosInstance";
+import { StringToBoolean } from "class-variance-authority/types";
 
 export interface SearchHit {
   documentId: string;
+  originalName: string;
   score: number;
+  workspaceId?: string;
+  mimeType?: string;
   preview: string;
-  metadata: any;
+  metadata?: any;
   document?: any;
 }
 
@@ -25,12 +29,12 @@ export const searchService = {
       return res.data.data;
     } catch(error: any) {
       if (error.response?.status === 400) {
-        throw new Error('Vui lòng nhập từ khóa tìm kiếm');
+        throw new Error('Please enter searching word');
       }
       if (error.response?.status === 403) {
-        throw new Error('Bạn không có quyền truy cập workspace này');
+        throw new Error('You have no permission to access this file');
       }
-      throw new Error('Lỗi tìm kiếm, vui lòng thử lại');
+      throw new Error('Searching error, please try again');
     }
   }
 };

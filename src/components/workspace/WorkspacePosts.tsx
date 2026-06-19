@@ -35,7 +35,7 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
       const activePosts = data.posts.filter((p: Post) => !p.deletedAt);
       setPosts(activePosts);
     } catch (error) {
-      toast.error("Không thể tải bảng tin");
+      toast.error("Unable to load the bulletin board.");
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +52,9 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
       await postService.createPost(workspaceId, content);
       setContent("");
       fetchPosts();
-      toast.success("Đã đăng bài viết");
+      toast.success("Post has been posted.");
     } catch (error) {
-      toast.error("Lỗi đăng bài");
+      toast.error("Error post");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,20 +66,20 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
       await postService.updatePost(workspaceId, postId, editContent);
       setEditingId(null);
       fetchPosts();
-      toast.success("Đã cập nhật bài viết");
+      toast.success("Updated post");
     } catch (error) {
-      toast.error("Lỗi cập nhật");
+      toast.error("Update error");
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm("Chắc chắn xóa bài viết này?")) return;
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
       await postService.deletePost(workspaceId, postId);
       fetchPosts();
-      toast.success("Đã xóa bài viết");
+      toast.success("Post has been deleted.");
     } catch (error) {
-      toast.error("Không có quyền xóa");
+      toast.error("No deletion permissions");
     }
   };
 
@@ -97,17 +97,17 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
           </Avatar>
           <div className="flex-1">
             <Textarea 
-              placeholder="Bạn muốn thảo luận điều gì với nhóm?" 
+              placeholder="What would you like to discuss with the group?" 
               value={content} onChange={(e) => setContent(e.target.value)}
               className="min-h-[80px] bg-secondary/30 resize-none mb-3"
             />
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Globe className="h-3 w-3" /> Mọi người trong Workspace đều có thể xem
+                <Globe className="h-3 w-3" /> Everyone in the Workspace can view it
               </span>
               <Button onClick={handleCreatePost} disabled={isSubmitting || !content.trim()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Đăng bài
+                Post
               </Button>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
       {posts.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground border-2 border-dashed border-border rounded-xl">
           <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-20" />
-          <p>Chưa có bài thảo luận nào.</p>
+          <p>There are no discussions yet</p>
         </div>
       ) : (
         posts.map((post) => {
@@ -134,10 +134,10 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
                     <AvatarFallback className="bg-slate-200 text-slate-700"><User className="h-5 w-5"/></AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold text-[15px]">{post.createdBy?.username || "Thành viên nhóm"}</p>
+                    <p className="font-semibold text-[15px]">{post.createdBy?.username || "Workspace's members"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi })}
-                      {post.updatedAt !== post.createdAt && " • Đã chỉnh sửa"}
+                      {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                      {post.updatedAt !== post.createdAt && " Fixed"}
                     </p>
                   </div>
                 </div>
@@ -148,8 +148,8 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
                       <button className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground"><MoreHorizontal className="h-5 w-5" /></button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-36">
-                      {isOwner && <DropdownMenuItem onClick={() => { setEditingId(post._id); setEditContent(post.content); }}><Pencil className="h-4 w-4 mr-2" /> Sửa bài</DropdownMenuItem>}
-                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeletePost(post._id)}><Trash2 className="h-4 w-4 mr-2" /> Xóa bài</DropdownMenuItem>
+                      {isOwner && <DropdownMenuItem onClick={() => { setEditingId(post._id); setEditContent(post.content); }}><Pencil className="h-4 w-4 mr-2" /> Edit post</DropdownMenuItem>}
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeletePost(post._id)}><Trash2 className="h-4 w-4 mr-2" /> Delete post</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -160,8 +160,8 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
                 <div className="mb-4">
                   <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="min-h-[100px] mb-2" autoFocus />
                   <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Hủy</Button>
-                    <Button size="sm" onClick={() => handleUpdatePost(post._id)}>Cập nhật</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                    <Button size="sm" onClick={() => handleUpdatePost(post._id)}>Update</Button>
                   </div>
                 </div>
               ) : (
@@ -176,7 +176,7 @@ export default function WorkspacePosts({ workspaceId, isAdmin }: { workspaceId: 
                   onClick={() => setActiveCommentPostId(activeCommentPostId === post._id ? null : post._id)}
                 >
                   <MessageCircle className="h-4 w-4" /> 
-                  Bình luận {post.commentCount > 0 && `(${post.commentCount})`}
+                  Comment {post.commentCount > 0 && `(${post.commentCount})`}
                 </Button>
               </div>
 

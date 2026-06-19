@@ -25,7 +25,7 @@ const InvitePage = () => {
         const data = await workspaceInviteService.getInviteInfo(token!);
         setInviteInfo(data);
       } catch (err: any) {
-        setError(err.response?.data?.message || "Liên kết không hợp lệ hoặc đã hết hạn.");
+        setError(err.response?.data?.message || "The link is invalid or has expired");
       } finally {
         setIsLoading(false);
       }
@@ -35,7 +35,7 @@ const InvitePage = () => {
 
   const handleJoin = async () => {
     if (!isAuthenticated) {
-      toast.warning("Vui lòng đăng nhập để tham gia Workspace!");
+      toast.warning("Please log in to join Workspace!");
       navigate('/login'); // Có thể truyền thêm state redirect back về trang này
       return;
     }
@@ -44,9 +44,9 @@ const InvitePage = () => {
     try {
       const data = await workspaceInviteService.joinWorkspace(token!, joinMessage);
       setJoinStatus(data.status);
-      toast.success(data.status === 'approved' ? "Đã tham gia thành công!" : "Đã gửi yêu cầu tham gia!");
+      toast.success(data.status === 'approved' ? "Successfully joined" : "Request to participate has been submitted");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Có lỗi xảy ra khi tham gia.");
+      toast.error(err.response?.data?.message || "An error occurred while joining");
     } finally {
       setIsJoining(false);
     }
@@ -59,9 +59,9 @@ const InvitePage = () => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
         <div className="bg-white p-8 rounded-2xl shadow-lg text-center max-w-md w-full">
           <ShieldCheck className="h-16 w-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Không thể truy cập</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Unable to access</h2>
           <p className="text-slate-500">{error}</p>
-          <Button onClick={() => navigate('/')} className="mt-6 w-full">Về trang chủ</Button>
+          <Button onClick={() => navigate('/')} className="mt-6 w-full">Back to homepage</Button>
         </div>
       </div>
     );
@@ -75,19 +75,19 @@ const InvitePage = () => {
           <Users className="h-8 w-8" />
         </div>
         
-        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">Lời mời tham gia</h2>
+        <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">Invitation to participate</h2>
         <p className="text-center text-lg font-semibold text-indigo-600 mb-6">{inviteInfo.workspaceName}</p>
         
         <div className="flex justify-center gap-6 mb-8 border-y border-slate-100 py-4">
           <div className="text-center">
             <p className="text-xl font-bold text-slate-800">{inviteInfo.memberCount}</p>
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Thành viên</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Members</p>
           </div>
           <div className="text-center border-l border-slate-100 pl-6">
             <p className="text-xl font-bold text-slate-800">
               {inviteInfo.autoApprove ? <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto" /> : <Clock className="h-6 w-6 text-amber-500 mx-auto" />}
             </p>
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Duyệt</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Approve</p>
           </div>
         </div>
 
@@ -95,7 +95,7 @@ const InvitePage = () => {
           <div className="space-y-4">
             {!inviteInfo.autoApprove && (
               <Input 
-                placeholder="Lời nhắn cho Admin (Tùy chọn)..." 
+                placeholder="Message for Admin (Optional)..." 
                 value={joinMessage} 
                 onChange={(e) => setJoinMessage(e.target.value)} 
                 className="bg-slate-50 h-12"
@@ -103,18 +103,18 @@ const InvitePage = () => {
             )}
             <Button onClick={handleJoin} disabled={isJoining} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-base">
               {isJoining ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-              Tham gia Workspace
+              Join Workspace
             </Button>
           </div>
         ) : joinStatus === 'approved' ? (
           <div className="text-center space-y-4">
-            <div className="p-4 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium">Bạn đã trở thành thành viên chính thức!</div>
+            <div className="p-4 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium">You have become a member</div>
             <Button onClick={() => navigate(`/workspaces/${inviteInfo.workspaceId}`)} className="w-full h-12">Đi tới Workspace <ArrowRight className="h-4 w-4 ml-2"/></Button>
           </div>
         ) : (
           <div className="text-center space-y-4">
-            <div className="p-4 bg-amber-50 text-amber-700 rounded-xl text-sm font-medium">Yêu cầu đã được gửi. Vui lòng chờ Quản trị viên phê duyệt.</div>
-            <Button variant="outline" onClick={() => navigate('/')} className="w-full h-12">Về trang chủ</Button>
+            <div className="p-4 bg-amber-50 text-amber-700 rounded-xl text-sm font-medium">The request has been submitted. Please wait for administrator approval</div>
+            <Button variant="outline" onClick={() => navigate('/')} className="w-full h-12">Back to homepage</Button>
           </div>
         )}
 

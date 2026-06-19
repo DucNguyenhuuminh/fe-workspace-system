@@ -24,7 +24,7 @@ export function SearchBar() {
 
   const [debouncedQuery, setDebouncedQuery] = useState("");
   
-  // === STATE MỚI: QUẢN LÝ POPUP XEM TÀI LIỆU ===
+  // === NEW STATE: MANAGE DOCUMENT PREVIEW POPUP ===
   const [previewFile, setPreviewFile] = useState<{ url: string, name: string } | null>(null);
 
   const currentWorkspaceId = location.pathname.match(/\/workspaces\/([a-zA-Z0-9_-]+)/)?.[1] || null;
@@ -64,8 +64,8 @@ export function SearchBar() {
             }}
             placeholder={
               currentWorkspaceId 
-                ? "Hỏi AI nội dung tài liệu trong Workspace này..." 
-                : "Hỏi AI nội dung tài liệu cá nhân..."
+                ? "Ask AI about documents in this workspace..." 
+                : "Ask AI about personal documents..."
             }
             className="pl-10 pr-10 h-10 bg-secondary/50 border-transparent focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary transition-colors rounded-full"
           />
@@ -87,13 +87,13 @@ export function SearchBar() {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mb-2 text-primary" />
-                <span className="text-sm">AI đang quét nội dung tài liệu...</span>
+                <span className="text-sm">AI is scanning document content...</span>
               </div>
             ) : results.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground">
                 <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-medium text-foreground">Không tìm thấy tài liệu phù hợp</p>
-                <p className="text-xs mt-1">Hãy thử đổi câu hỏi hoặc dùng từ khóa khác nhé.</p>
+                <p className="text-sm font-medium text-foreground">No matching documents found</p>
+                <p className="text-xs mt-1">Please try a different question or keyword.</p>
               </div>
             ) : (
               <div className="max-h-[320px] overflow-y-auto overscroll-contain 
@@ -105,10 +105,10 @@ export function SearchBar() {
               >
                 <div className="p-2 flex flex-col gap-1">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider sticky top-0 bg-card z-10 shadow-sm">
-                    Tài liệu liên quan ({results.length})
+                    Related documents ({results.length})
                   </div>
                   {results.map((hit) => {
-                    const fileName = hit.document?.originalName || hit.metadata?.filename || "Tài liệu không xác định";
+                    const fileName = hit.originalName || "Unknown document"
                     const matchPercent = Math.max(0, Math.round(hit.score * 100));
                     const cleanPreview = hit.preview ? hit.preview.replace(/\s+/g, ' ').trim() : null;
 
@@ -119,13 +119,13 @@ export function SearchBar() {
                         onClick={async () => {
                           setIsOpen(false);
                           
-                          // Hiển thị Toast Loading trong lúc chờ API lấy link
-                          const toastId = toast.loading("Đang nạp tài liệu...");
+                          // Show Loading Toast while waiting for API to fetch link
+                          const toastId = toast.loading("Loading document...");
                           try {
                             const fileUrl = await fileService.getFileLink(hit.documentId, 'view');
                             toast.dismiss(toastId);
                             
-                            // Mở Popup Viewer thay vì nhảy tab
+                            // Open Viewer Popup instead of navigating tab
                             setPreviewFile({
                               url: fileUrl,
                               name: fileName
@@ -133,7 +133,7 @@ export function SearchBar() {
 
                           } catch(error) {
                             toast.dismiss(toastId);
-                            toast.error("Không thể mở tài liệu này. Vui lòng thử lại!");
+                            toast.error("Cannot open this document. Please try again!");
                             console.error(error);
                           }
                         }}
@@ -148,7 +148,7 @@ export function SearchBar() {
                             </span>
                           </div>
                           <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 border ${matchPercent > 70 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-orange-500/10 text-orange-600 border-orange-500/20'}`}>
-                            {matchPercent}% phù hợp
+                            {matchPercent}% match
                           </span>
                         </div>
                         
@@ -167,7 +167,7 @@ export function SearchBar() {
         )}
       </div>
 
-      {/* MODAL XEM TRƯỚC TÀI LIỆU */}
+      {/* DOCUMENT PREVIEW MODAL */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
         <DialogContent className="max-w-5xl h-[85vh] p-0 flex flex-col overflow-hidden bg-background border-none shadow-2xl rounded-2xl">
           <DialogHeader className="px-6 py-4 border-b bg-card flex flex-row items-center justify-between">
@@ -175,7 +175,7 @@ export function SearchBar() {
               {previewFile?.name}
             </DialogTitle>
             <div className="flex items-center gap-3 pr-8">
-               {/* Nút hỗ trợ mở sang tab mới nếu người dùng muốn không gian rộng hơn */}
+               {/* Support button to open in a new tab if the user wants more space */}
                <a 
                  href={previewFile?.url} 
                  target="_blank" 
@@ -183,7 +183,7 @@ export function SearchBar() {
                  className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-secondary"
                >
                  <Maximize2 className="h-3.5 w-3.5" />
-                 Mở tab mới
+                 Open in new tab
                </a>
             </div>
           </DialogHeader>
@@ -192,7 +192,7 @@ export function SearchBar() {
               <iframe 
                 src={previewFile.url} 
                 className="w-full h-full border-0"
-                title="Trình xem tài liệu"
+                title="Document Viewer"
               />
             )}
           </div>

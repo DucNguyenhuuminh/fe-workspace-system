@@ -70,7 +70,7 @@ export function AppSidebar() {
             {isUploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Đang tải...
+                Loading...
               </>
             ) : (
               <>
@@ -109,7 +109,7 @@ export function AppSidebar() {
       {isUploading && uploadFile && (
         <div className="fixed bottom-6 right-6 w-80 bg-card border border-border shadow-2xl rounded-xl z-50 overflow-hidden animate-in slide-in-from-bottom-5">
           <div className="bg-secondary/50 px-4 py-3 border-b border-border flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Đang tải lên 1 mục...</span>
+            <span className="text-sm font-semibold text-foreground">Uploading an item...</span>
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
           

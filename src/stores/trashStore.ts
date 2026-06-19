@@ -25,7 +25,7 @@ export const useTrashStore = create<TrashState>((set, get) => ({
       const data = await trashService.getTrashedItems(workspaceId);
       set({ trashedFolders: data.folders, trashedDocuments: data.documents });
     } catch (error) {
-      toast.error("Không thể tải dữ liệu thùng rác");
+      toast.error("Unable to load Trash data");
     } finally {
       set({ isLoading: false });
     }
@@ -34,7 +34,7 @@ export const useTrashStore = create<TrashState>((set, get) => ({
   forceDeleteItem: async (id, kind) => {
     try {
       await trashService.forceDelete(id, kind);
-      toast.success("Đã xóa vĩnh viễn");
+      toast.success("Permanently deleted");
       
       if (kind === "folder") {
         set((state) => ({ trashedFolders: state.trashedFolders.filter(f => f._id !== id) }));
@@ -42,7 +42,7 @@ export const useTrashStore = create<TrashState>((set, get) => ({
         set((state) => ({ trashedDocuments: state.trashedDocuments.filter(d => d._id !== id) }));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Xóa vĩnh viễn thất bại");
+      toast.error(error.response?.data?.message || "Permanently delete the failure");
     }
   },
 
@@ -50,10 +50,10 @@ export const useTrashStore = create<TrashState>((set, get) => ({
     set({ isLoading: true });
     try {
       await trashService.emptyTrash();
-      toast.success("Đã dọn sạch thùng rác");
+      toast.success("Trash cans have been emptied");
       set({ trashedFolders: [], trashedDocuments: [] });
     } catch (error) {
-      toast.error("Dọn thùng rác thất bại");
+      toast.error("The attempt to empty Trash can failed");
     } finally {
       set({ isLoading: false });
     }
@@ -62,7 +62,7 @@ export const useTrashStore = create<TrashState>((set, get) => ({
   restoreItem: async (id, kind) => {
     try {
       await trashService.restoreItem(id, kind);
-      toast.success("Khôi phục thành công");
+      toast.success("Restore successfully");
 
       if (kind === "folder") {
         set((state) => ({
@@ -74,7 +74,7 @@ export const useTrashStore = create<TrashState>((set, get) => ({
         }));
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || "Khôi phục thất bại";
+      const msg = error.response?.data?.message || "Restore failed";
       toast.error(msg);
     }
   },

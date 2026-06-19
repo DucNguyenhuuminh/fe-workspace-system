@@ -79,7 +79,7 @@ export const useWorkspaceDetail = (workspaceId: string | undefined) => {
   };
 
   const handleEmptyTrash = async () => {
-    if (window.confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ dữ liệu trong thùng rác và không thể khôi phục. Bạn có chắc chắn?")) {
+    if (window.confirm("WARNING: This action will permanently delete all data in Trash and it cannot be recovered. Are you sure?")) {
       await emptyAllTrash();
     }
   };

@@ -6,7 +6,7 @@ import { NotificationDropdown } from "./NotificationDropdown"; // Import Compone
 export function AppHeader() {
   const { user } = useAuthStore();
 
-  const displayName = user?.username || "Người dùng";
+  const displayName = user?.username;
   const avatarInitial = user?.username ? user.username.charAt(0).toUpperCase() : "";
 
   return (

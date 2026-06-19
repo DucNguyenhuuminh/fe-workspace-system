@@ -27,9 +27,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await authService.login(credentials);
       localStorage.setItem('accessToken', res.token);
       set({ user: res.user, isAuthenticated: true });
-      toast.success(res.message || "Đăng nhập thành công!");
+      toast.success(res.message || "Login successful!");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Đăng nhập thất bại!");
+      toast.error(error.response?.data?.message || "Login failed!");
       throw error;
     } finally {
       set({ isLoading: false });
@@ -40,9 +40,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const res = await authService.register(data);
-      toast.success(res.message || "Đăng ký thành công!");
+      toast.success(res.message || "Registration successful!");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Đăng ký thất bại!");
+      toast.error(error.response?.data?.message || "Registration failed!");
       throw error;
     } finally {
       set({ isLoading: false });
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     
     // 2. Set state tạm thời để UI không bị văng lỗi trước khi reload
     set({ user: null, isAuthenticated: false });
-    toast.info("Đã đăng xuất");
+    toast.info("Logged out");
 
     // 3. Ép trình duyệt tải lại và điều hướng về trang đăng nhập
     // Dùng setTimeout nhỏ để User kịp nhìn thấy Toast thông báo "Đã đăng xuất"

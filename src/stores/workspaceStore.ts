@@ -28,7 +28,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const data = await workspaceService.getAll();
       set({ workspaces: data });
     } catch (error) {
-      toast.error("Lỗi khi tải danh sách Workspace");
+      toast.error("Error loading Workspace list");
     } finally {
       set({ isLoading: false });
     }
@@ -40,7 +40,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const data = await workspaceService.getDetail(id);
       set({ currentWorkspace: data });
     } catch (error) {
-      toast.error("Lỗi tải thông tin Workspace");
+      toast.error("Workspace information loading error");
     } finally {
       set({ isLoading: false });
     }
@@ -49,10 +49,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   createWorkspace: async (name) => {
     try {
       const newWs = await workspaceService.create(name);
-      toast.success("Tạo Workspace thành công");
+      toast.success("Workspace created successfully");
       set((state) => ({ workspaces: [...state.workspaces, newWs] }));
     } catch (error) {
-      toast.error("Tạo Workspace thất bại");
+      toast.error("Workspace creation failed");
     }
   },
 
@@ -63,37 +63,37 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       // Reload lại detail
       get().fetchWorkspaceDetail(workspaceId);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Thêm thành viên thất bại");
+      toast.error(error.response?.data?.message || "Adding a member failed");
     }
   },
 
   removeMember: async (workspaceId, targetUserId) => {
     try {
       await workspaceService.removeMember(workspaceId, targetUserId);
-      toast.success("Đã xoá thành viên");
+      toast.success("Member removed");
       get().fetchWorkspaceDetail(workspaceId);
     } catch (error) {
-      toast.error("Xoá thành viên thất bại");
+      toast.error("Member deletion failed");
     }
   },
   deleteWorkspace: async (id) => {
     try {
       await workspaceService.deleteWorkspace(id); 
-      toast.success("Đã xóa Workspace");
+      toast.success("Deleted Workspace");
       set((state) => ({ 
         workspaces: state.workspaces.filter((ws) => ws._id !== id) 
       }));
     } catch (error) {
-      toast.error("Xóa Workspace thất bại");
+      toast.error("Workspace deletion failed");
     }
   },
   setUserPermission: async (workspaceId, targetUserId, permissions) => {
     try {
       await workspaceService.setUserPermission(workspaceId, targetUserId, permissions);
-      toast.success(`Đã thay đổi quyền thành ${permissions}`);
+      toast.success(`Change permission to  ${permissions}`);
       await get().fetchWorkspaceDetail(workspaceId);
     } catch(error) {
-      toast.error(error.response?.data?.message || "Lỗi khi đổi quyền");
+      toast.error(error.response?.data?.message || "Error when changing permissions");
     }
   }
 }));

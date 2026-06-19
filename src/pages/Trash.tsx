@@ -25,13 +25,13 @@ const TrashPage = () => {
   const allItems = mergeItems(trashedFolders, trashedDocuments);
 
   const handleEmptyTrash = async () => {
-    if (window.confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ dữ liệu trong thùng rác và không thể khôi phục. Bạn có chắc chắn?")) {
+    if (window.confirm("WARNING: This action will permanently delete all data in Trash and it cannot be recovered. Are you sure?")) {
       await emptyAllTrash();
     }
   };
 
   const handleForceDelete = (id: string, kind: "folder" | "document") => {
-    if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn mục này?")) {
+    if (window.confirm("Are you sure you want to permanently delete this item?")) {
       forceDeleteItem(id, kind);
     }
   };
@@ -55,10 +55,10 @@ const TrashPage = () => {
               <Trash2 className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Thùng rác</h1>
+              <h1 className="text-2xl font-bold text-slate-800">Trash</h1>
               <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4 text-orange-500" />
-                Các mục trong thùng rác sẽ bị xóa vĩnh viễn sau 30 ngày.
+                Items in the trash will be permanently deleted after 10 days
               </p>
             </div>
           </div>
@@ -70,7 +70,7 @@ const TrashPage = () => {
             disabled={allItems.length === 0 || isLoading}
           >
             <FileX2 className="h-4 w-4" />
-            Dọn sạch thùng rác
+            Empty the trash can
           </Button>
         </div>
 
@@ -80,16 +80,16 @@ const TrashPage = () => {
         ) : allItems.length === 0 ? (
           <div className="text-center py-24 text-slate-500 border-2 border-dashed rounded-2xl bg-slate-50/50">
             <Trash2 className="h-12 w-12 mx-auto text-slate-300 mb-3" />
-            <p className="font-medium text-slate-600">Thùng rác đang trống</p>
-            <p className="text-sm mt-1">Không có tệp hay thư mục nào ở đây.</p>
+            <p className="font-medium text-slate-600">Trash can is empty</p>
+            <p className="text-sm mt-1">There are no files or folders here</p>
           </div>
         ) : (
           <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
             <div className="grid grid-cols-12 px-6 py-4 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
-              <div className="col-span-6">Tên</div>
-              <div className="col-span-3">Ngày xóa</div>
-              <div className="col-span-2">Kích thước</div>
-              <div className="col-span-1 text-right">Thao tác</div>
+              <div className="col-span-6">Name</div>
+              <div className="col-span-3">Date deleted</div>
+              <div className="col-span-2">Size</div>
+              <div className="col-span-1 text-right">Operation</div>
             </div>
             
             <div className="divide-y divide-slate-100 max-h-[600px] overflow-auto">
@@ -114,7 +114,7 @@ const TrashPage = () => {
                         onClick={() => restoreItem(display.id, display.kind as "folder" | "document")}
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
-                        <span className="text-xs">Khôi phục</span>
+                        <span className="text-xs">Restore</span>
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -122,7 +122,7 @@ const TrashPage = () => {
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
                         onClick={() => handleForceDelete(display.id, display.kind as "folder" | "document")}
                       >
-                        Xóa vĩnh viễn
+                        Permanently delete
                       </Button>
                     </div>
                   </div>

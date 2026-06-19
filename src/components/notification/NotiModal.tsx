@@ -50,11 +50,11 @@ export function NotificationModal() {
         {/* HEADER CỦA MODAL */}
         <DialogHeader className="mb-4 flex flex-row items-center justify-between pr-6">
           <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-indigo-500" /> Tất cả thông báo
+            <Bell className="h-5 w-5 text-indigo-500" /> All notifications
           </DialogTitle>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" className="gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50" onClick={markAllAsRead}>
-              <Check className="h-4 w-4" /> Đánh dấu đã đọc tất cả
+              <Check className="h-4 w-4" /> Mark as read all
             </Button>
           )}
         </DialogHeader>
@@ -64,7 +64,7 @@ export function NotificationModal() {
           {notifications.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center p-16 text-muted-foreground">
               <Bell className="h-12 w-12 opacity-20 mb-3" />
-              <p>Bạn chưa có thông báo nào.</p>
+              <p>You haven't received any notifications yet</p>
             </div>
           ) : (
             notifications.map((noti) => {
@@ -106,7 +106,7 @@ export function NotificationModal() {
                   <button 
                     onClick={(e) => { e.stopPropagation(); deleteNoti(noti._id); }}
                     className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-500 transition-all shrink-0 rounded-lg hover:bg-red-50"
-                    title="Xóa thông báo"
+                    title="Delete notification"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

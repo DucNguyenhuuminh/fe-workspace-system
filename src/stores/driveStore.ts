@@ -47,8 +47,8 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         breadcrumbs: [] 
       });
     } catch (error) {
-      console.error("Lỗi fetch Root items:", error);
-      toast.error("Không thể tải dữ liệu");
+      console.error("Error fetching Root items:", error);
+      toast.error("Unable to load data");
     } finally {
       set({ isLoading: false });
     }
@@ -66,7 +66,7 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         documents: data.documents  
       });
     } catch (error) {
-      toast.error("Không thể tải nội dung thư mục");
+      toast.error("Unable to load folder contents");
     } finally {
       set({ isLoading: false });
     }
@@ -75,7 +75,7 @@ export const useDriveStore = create<DriveState>((set, get) => ({
   createNewFolder: async (name: string, workspaceId: string | null = null, parentId: string | null = null) => {
     try {
       await folderService.createFolder(name, workspaceId, parentId);
-      toast.success("Tạo thư mục thành công");
+      toast.success("Folder created successfully");
       
       const { currentFolderInfo } = get();
       
@@ -85,33 +85,33 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         get().fetchRootItems(workspaceId);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Tạo thư mục thất bại");
+      toast.error(error.response?.data?.message || "Folder creation failed");
     }
   },
 
   renameFolderItem: async (folderId, newName) => {
     try {
       await folderService.renameFolder(folderId, newName);
-      toast.success("Đổi tên thư mục thành công");
+      toast.success("Folder renaming successful");
       set((state) => ({
         folders: state.folders.map((f) => 
           f._id === folderId ? { ...f, name: newName } : f
         )
       }));
     } catch (error) {
-      toast.error("Đổi tên thư mục thất bại");
+      toast.error("Folder renaming failed");
     }
   },
 
   deleteFolderItem: async (folderId) => {
     try {
       await folderService.deleteFolder(folderId);
-      toast.success("Đã chuyển thư mục vào thùng rác");
+      toast.success("The folder has been moved to Trash");
       set((state) => ({
         folders: state.folders.filter((f) => f._id !== folderId)
       }));
     } catch (error) {
-      toast.error("Xoá thư mục thất bại");
+      toast.error("Folder deletion failed");
     }
   },
 
@@ -122,7 +122,7 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         folders: state.folders.filter((f) => f._id !== folderId)
       }));
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Di chuyển thư mục thất bại");
+      toast.error(error.response?.data?.message || "Folder move failed");
       throw error;
     }
   },
@@ -130,26 +130,26 @@ export const useDriveStore = create<DriveState>((set, get) => ({
   renameDocumentItem: async (documentId, newName) => {
     try {
       await fileService.renameFile(documentId, newName);
-      toast.success("Đổi tên file thành công");
+      toast.success("File renaming successful");
       set((state) => ({
         documents: state.documents.map((d) => 
           d._id === documentId ? { ...d, originalName: newName } : d
         )
       }));
     } catch (error) {
-      toast.error("Đổi tên file thất bại");
+      toast.error("File renaming failed");
     }
   },
 
   deleteDocumentItem: async (documentId) => {
     try {
       await fileService.deleteFile(documentId);
-      toast.success("Đã chuyển file vào thùng rác");
+      toast.success("The file has been moved to Trash");
       set((state) => ({
         documents: state.documents.filter((d) => d._id !== documentId)
       }));
     } catch (error) {
-      toast.error("Xoá file thất bại");
+      toast.error("File deletion failed");
     }
   },
 
@@ -160,14 +160,14 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         documents: state.documents.filter((d) => d._id !== documentId)
       }));
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Di chuyển file thất bại");
+      toast.error(error.response?.data?.message || "File transfer failed");
       throw error;
     }
   },
 
   downloadDocument: async (documentId: string, fileName: string) => {
     try {
-      toast.info("Đang lấy liên kết tải xuống...");
+      toast.info("Getting the download link...");
       const fileUrl = await fileService.getFileLink(documentId, "download"); 
     
       if (fileUrl) {
@@ -179,24 +179,24 @@ export const useDriveStore = create<DriveState>((set, get) => ({
         a.click();
         document.body.removeChild(a);
       } else {
-        toast.error("Không tìm thấy đường dẫn tải file.");
+        toast.error("No download link found");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi lấy liên kết tải xuống");
+      toast.error(error.response?.data?.message || "Error when retrieving download link");
     }
   },
 
   viewDocument: async (documentId: string) => {
     try {
-      toast.info("Đang mở tệp...");
+      toast.info("Opening a file...");
       const fileUrl = await fileService.getFileLink(documentId, 'view');
       if (fileUrl) {
         window.open(fileUrl, '_blank');
       }else {
-        toast.error("Không tìm thấy đường dẫn tệp.");
+        toast.error("File path not found");
       }
     } catch(err) {
-      toast.error(err.response?.data?.message || "Lỗi khi mở tệp");
+      toast.error(err.response?.data?.message || "Error when opening file");
     }
   }
 }));

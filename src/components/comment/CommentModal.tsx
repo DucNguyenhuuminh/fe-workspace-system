@@ -17,7 +17,7 @@ export default function CommentModal({ isOpen, onClose, fileId }: CommentModalPr
       <DialogContent className="sm:max-w-[700px] p-0 bg-transparent border-none shadow-none h-[80vh] flex flex-col">
         {/* Ẩn DialogTitle đi để tránh warning của Radix UI, vì CommentSection đã có Header riêng */}
         <VisuallyHidden>
-          <DialogTitle>Bình luận tài liệu</DialogTitle>
+          <DialogTitle>Comment on the document</DialogTitle>
         </VisuallyHidden>
         
         {/* Nhúng giao diện chat vào đây */}

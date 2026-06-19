@@ -40,7 +40,7 @@ export const useNotiStore = create<NotiState>((set, get) => ({
         page: pageNumber,
       }));
     } catch (error) {
-      console.error("Lỗi lấy thông báo:", error);
+      console.error("Notification retrieval error:", error);
     } finally {
       set({ isLoading: false });
     }

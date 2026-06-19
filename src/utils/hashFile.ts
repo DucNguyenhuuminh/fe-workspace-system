@@ -13,7 +13,7 @@ export async function hashFile(file: File): Promise<string> {
 
     fileReader.onload = (e) => {
       if (!e.target?.result) {
-        return reject(new Error("Lỗi đọc file"));
+        return reject(new Error("Error reading file"));
       }
       
       // Băm (hash) phần dữ liệu vừa đọc được
@@ -30,7 +30,7 @@ export async function hashFile(file: File): Promise<string> {
     };
 
     fileReader.onerror = () => {
-      reject(fileReader.error || new Error("Lỗi không xác định khi đọc file"));
+      reject(fileReader.error || new Error("Error detecting while read file"));
     };
 
     function loadNext() {

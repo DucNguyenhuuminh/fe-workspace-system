@@ -30,7 +30,7 @@ const SharePage = () => {
           setNeedsPassword(true);
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || "Liên kết không tồn tại hoặc đã hết hạn");
+        setError(err.response?.data?.message || "Link does not exist or has expired");
       } finally {
         setIsLoading(false);
       }
@@ -46,23 +46,23 @@ const SharePage = () => {
         setPasswordVerified(true);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Mật khẩu không chính xác");
+      toast.error(err.response?.data?.message || "Incorrect password");
     }
   };
 
   const handleView = async () => {
     try {
-      toast.info("Đang mở tệp...");
+      toast.info("Opening file...");
       const data = await shareService.accessSharedFile(token!, 'view', passwordVerified ? password : undefined);
       if (data.url) window.open(data.url, '_blank');
     } catch (err) {
-      toast.error("Không thể xem tệp");
+      toast.error("Failed to view file");
     }
   };
 
   const handleDownload = async () => {
     try {
-      toast.info("Đang tải xuống...");
+      toast.info("Downloading...");
       const data = await shareService.accessSharedFile(token!, 'download', passwordVerified ? password : undefined);
       if (data.url) {
         const a = document.createElement("a");
@@ -73,17 +73,17 @@ const SharePage = () => {
         document.body.removeChild(a);
       }
     } catch (err) {
-      toast.error("Không có quyền tải xuống");
+      toast.error("No permission to download");
     }
   };
 
   const handleSaveToMySpace = async () => {
     try {
-      const toastId = toast.loading("Đang lưu vào MySpace...");
+      const toastId = toast.loading("Saving to MySpace...");
       await shareService.saveToMySpace(token!, passwordVerified ? password : undefined, null);
-      toast.success("Lưu thành công! Vui lòng kiểm tra MySpace của bạn.", { id: toastId });
+      toast.success("Saved successfully! Please check your MySpace.", { id: toastId });
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi lưu tệp");
+      toast.error(err.response?.data?.message || "Error saving file");
     }
   };
 
@@ -94,7 +94,7 @@ const SharePage = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md w-full">
           <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4 opacity-80" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Truy cập bị từ chối</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Access Denied</h2>
           <p className="text-slate-500">{error}</p>
         </div>
       </div>
@@ -106,12 +106,12 @@ const SharePage = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100">
           <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4"><Lock className="h-6 w-6" /></div>
-          <h2 className="text-xl font-bold text-center text-slate-800 mb-2">Tệp được bảo vệ</h2>
-          <p className="text-center text-sm text-slate-500 mb-6">Vui lòng nhập mật khẩu để xem tệp <strong className="text-slate-700">{fileInfo.fileName}</strong></p>
+          <h2 className="text-xl font-bold text-center text-slate-800 mb-2">Protected File</h2>
+          <p className="text-center text-sm text-slate-500 mb-6">Please enter the password to view <strong className="text-slate-700">{fileInfo.fileName}</strong></p>
           
           <div className="space-y-4">
-            <Input type="password" placeholder="Nhập mật khẩu..." value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} className="h-12 text-center text-lg tracking-widest" />
-            <Button onClick={handleVerifyPassword} className="w-full h-12 text-base bg-indigo-600 hover:bg-indigo-700">Xác nhận <ArrowRight className="h-4 w-4 ml-2" /></Button>
+            <Input type="password" placeholder="Enter password..." value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} className="h-12 text-center text-lg tracking-widest" />
+            <Button onClick={handleVerifyPassword} className="w-full h-12 text-base bg-indigo-600 hover:bg-indigo-700">Confirm <ArrowRight className="h-4 w-4 ml-2" /></Button>
           </div>
         </div>
       </div>
@@ -133,17 +133,17 @@ const SharePage = () => {
 
         {/* Phần Thao tác */}
         <div className="md:w-3/5 p-8 flex flex-col justify-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Tài liệu được chia sẻ</h2>
-          <p className="text-slate-500 mb-8 text-sm">Bạn đã nhận được quyền truy cập vào tài liệu này. Vui lòng chọn hành động bên dưới.</p>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Shared Document</h2>
+          <p className="text-slate-500 mb-8 text-sm">You have been granted access to this document. Please select an action below.</p>
 
           <div className="space-y-4">
             <Button onClick={handleView} className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-base">
-              <FileText className="h-5 w-5 mr-2" /> Xem trực tuyến
+              <FileText className="h-5 w-5 mr-2" /> View Online
             </Button>
             
             {fileInfo.settings?.allowedDownload && (
               <Button onClick={handleDownload} variant="outline" className="w-full h-12 border-2 border-indigo-100 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-200 text-base">
-                <Download className="h-5 w-5 mr-2" /> Tải xuống máy
+                <Download className="h-5 w-5 mr-2" /> Download
               </Button>
             )}
 
@@ -155,7 +155,7 @@ const SharePage = () => {
                 className="w-full h-12 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-base mt-4"
               >
                 <Save className="h-5 w-5 mr-2" /> 
-                {isAuthenticated ? "Lưu bản sao vào MySpace" : "Đăng nhập để lưu vào MySpace"}
+                {isAuthenticated ? "Save a copy to MySpace" : "Log in to save to MySpace"}
               </Button>
             )}
           </div>

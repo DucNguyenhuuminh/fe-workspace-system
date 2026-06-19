@@ -4,6 +4,7 @@ import {
   FolderPlus, ArrowLeft, FolderOpen, UploadCloud, FolderOutput, Check, Loader2, ChevronRight, Eye, Link, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Thêm import Input
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import AppLayout from "@/components/layout/AppLayout";
@@ -31,33 +32,33 @@ const FileContextMenu = ({
     <DropdownMenuContent align={align} className="w-48">
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onView(); }}>
-          <Eye className="h-4 w-4" /> Xem trước
+          <Eye className="h-4 w-4" /> Preview
         </DropdownMenuItem>
       )}
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onComment(); }}>
-          <MessageSquare className="h-4 w-4" /> Bình luận
+          <MessageSquare className="h-4 w-4" /> Comment
         </DropdownMenuItem>
       )}
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onRename(); }}>
-        <Pencil className="h-4 w-4" /> Đổi tên
+        <Pencil className="h-4 w-4" /> Rename
       </DropdownMenuItem>
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onMove(); }}>
-        <FolderOutput className="h-4 w-4" /> Di chuyển tới...
+        <FolderOutput className="h-4 w-4" /> Move to...
       </DropdownMenuItem>
       <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onShare(); }}>
-        <Link className="h-4 w-4" /> Chia sẻ
+        <Link className="h-4 w-4" /> Share
       </DropdownMenuItem>
       {!isFolder && (
         <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
-          <Download className="h-4 w-4" /> Tải xuống
+          <Download className="h-4 w-4" /> Download
         </DropdownMenuItem>
       )}
       
       <DropdownMenuSeparator />
       
       <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-        <Trash2 className="h-4 w-4" /> Xóa
+        <Trash2 className="h-4 w-4" /> Delete
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -74,7 +75,7 @@ const MySpace = () => {
     moveFolderItem, moveDocumentItem, viewDocument
   } = useMySpace();
 
-  // --- STATE CHO TÍNH NĂNG DI CHUYỂN ---
+  // --- STATE DI CHUYỂN & SHARE ---
   const [movingItem, setMovingItem] = useState<FileItem | null>(null);
   const [destPath, setDestPath] = useState<{id: string | null, name: string}[]>([{id: null, name: 'My Space'}]);
   const [destFolders, setDestFolders] = useState<any[]>([]);
@@ -83,7 +84,14 @@ const MySpace = () => {
   const [shareItem, setShareItem] = useState<FileItem | null>(null);
   const [commentFileId, setCommentFileId] = useState<string | null>(null);
 
-  // Lấy danh sách thư mục đích khi đang mở Dialog
+  // --- STATE POPUP CREATE FOLDER & RENAME ---
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+
+  const [renameItem, setRenameItem] = useState<FileItem | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  // Lấy danh sách thư mục đích khi đang mở Dialog di chuyển
   useEffect(() => {
     if (!movingItem) return;
     
@@ -91,18 +99,17 @@ const MySpace = () => {
       setIsFetchingDest(true);
       try {
         const currentDestId = destPath[destPath.length - 1].id;
-        // Tạm dùng fetch chay ở đây để lướt cây thư mục mà không ảnh hưởng tới UI chính
         const { folderService } = await import('@/services/folderService');
         const res = await folderService.getFolders(currentDestId, undefined);
         let folders = res.data.data || [];
         
-        // Lọc bỏ chính thư mục đang bị di chuyển để tránh lỗi vòng lặp (Rắn cắn đuôi)
+        // Lọc bỏ chính thư mục đang bị di chuyển để tránh lỗi vòng lặp
         if (movingItem.kind === "folder") {
           folders = folders.filter((f: any) => f._id !== movingItem.data._id);
         }
         setDestFolders(folders);
       } catch (error) {
-        toast.error("Không thể tải danh sách thư mục đích.");
+        toast.error("Failed to load destination folders.");
       } finally {
         setIsFetchingDest(false);
       }
@@ -111,67 +118,77 @@ const MySpace = () => {
     fetchDestFolders();
   }, [movingItem, destPath]);
 
-  // --- CÁC HÀM XỬ LÝ (Handlers) ---
+  // --- CÁC HÀM XỬ LÝ POPUP RENAME ---
+  const openRenameModal = (item: FileItem) => {
+    setRenameItem(item);
+    const currentName = item.kind === "folder" ? item.data.name : item.data.originalName;
+    setRenameValue(currentName);
+  };
 
+  const submitRename = () => {
+    if (!renameItem || !renameValue.trim()) return;
+    const currentName = renameItem.kind === "folder" ? renameItem.data.name : renameItem.data.originalName;
+    
+    if (renameValue.trim() !== currentName) {
+      if (renameItem.kind === "folder") {
+        renameFolderItem(renameItem.data._id, renameValue.trim());
+      } else {
+        renameDocumentItem(renameItem.data._id, renameValue.trim());
+      }
+    }
+    setRenameItem(null); // Đóng modal
+  };
+
+  // --- CÁC HÀM XỬ LÝ POPUP CREATE FOLDER ---
+  const openCreateFolderModal = () => {
+    setNewFolderName("");
+    setIsCreateModalOpen(true);
+  };
+
+  const submitCreateFolder = () => {
+    if (newFolderName.trim()) {
+      createFolder(newFolderName.trim());
+      setIsCreateModalOpen(false); // Đóng modal
+    }
+  };
+
+  // --- CÁC HÀM XỬ LÝ KHÁC (Handlers) ---
   const handleConfirmMove = async () => {
     if (!movingItem) return;
     const targetFolderId = destPath[destPath.length - 1].id;
     const currentParentId = currentFolderInfo?._id || null;
 
     if (targetFolderId === currentParentId) {
-      toast.warning("Tệp này đã nằm trong thư mục đích rồi!");
+      toast.warning("This item is already in the destination folder!");
       setMovingItem(null);
       return;
     }
 
     setIsMoving(true);
-    const toastId = toast.loading("Đang di chuyển...");
+    const toastId = toast.loading("Moving...");
     
     try {
-      // 🚨 GỌI HÀM TỪ HOOK THAY VÌ GỌI TRỰC TIẾP SERVICE
       if (movingItem.kind === "folder") {
-        // Tham số thứ 3 là null vì ở MySpace không có workspaceId
         await moveFolderItem(movingItem.data._id, targetFolderId, null);
       } else {
         await moveDocumentItem(movingItem.data._id, targetFolderId);
       }
-      
-      toast.success("Di chuyển thành công!", { id: toastId });
-      
-      // Reset state & Đóng Dialog
+      toast.success("Moved successfully!", { id: toastId });
       setMovingItem(null);
       setDestPath([{id: null, name: 'My Space'}]);
-      
-      // Không cần reload page hay fetch lại data nữa vì Store đã tự động filter item đi rồi!
     } catch (error) {
-      // Toast lỗi đã được xử lý trong Store, ở đây chỉ cần tắt loading dialog
       console.error(error);
     } finally {
       setIsMoving(false);
     }
   };
 
-  const handleCreateFolder = () => {
-    const folderName = window.prompt("Nhập tên thư mục mới:");
-    if (folderName?.trim()) createFolder(folderName.trim());
-  };
-
-  const handleRename = (item: FileItem) => {
-    if (item.kind === "folder") {
-      const newName = window.prompt("Nhập tên mới:", item.data.name);
-      if (newName?.trim() && newName.trim() !== item.data.name) renameFolderItem(item.data._id, newName.trim());
-    } else {
-      const newName = window.prompt("Nhập tên mới:", item.data.originalName);
-      if (newName?.trim() && newName.trim() !== item.data.originalName) renameDocumentItem(item.data._id, newName.trim());
-    }
-  };
-
   const handleDownload = (item: FileItem) => {
-    item.kind === "document" ? downloadDocument(item.data._id, item.data.originalName) : toast.info("Chưa hỗ trợ tải nguyên thư mục.");
+    item.kind === "document" ? downloadDocument(item.data._id, item.data.originalName) : toast.info("Downloading entire folders is not supported yet.");
   };
 
   const handleDelete = (item: FileItem) => {
-    if (window.confirm("Chuyển mục này vào thùng rác?")) {
+    if (window.confirm("Move this item to trash?")) {
       item.kind === "folder" ? deleteFolderItem(item.data._id) : deleteDocumentItem(item.data._id);
     }
   };
@@ -213,13 +230,13 @@ const MySpace = () => {
                 {currentFolderInfo ? currentFolderInfo.name : "My Space"}
               </h1>
               <p className="text-muted-foreground text-sm mt-1">
-                {currentFolderInfo ? "Thư mục con" : "Quản lý tài liệu cá nhân"}
+                {currentFolderInfo ? "Subfolder" : "Personal document management"}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <Button onClick={handleCreateFolder} className="gap-2"><FolderPlus className="h-4 w-4" /> Tạo thư mục</Button>
+            <Button onClick={openCreateFolderModal} className="gap-2"><FolderPlus className="h-4 w-4" /> Create folder</Button>
             <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-sm">
               <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setViewMode("list")}>
                 <LayoutList className="h-4 w-4" />
@@ -237,9 +254,9 @@ const MySpace = () => {
           viewMode === "list" ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="grid grid-cols-12 px-6 py-3 border-b text-xs font-semibold text-muted-foreground uppercase bg-secondary/30">
-                <div className="col-span-6">Tên</div>
-                <div className="col-span-3">Ngày tạo</div>
-                <div className="col-span-2">Kích thước</div>
+                <div className="col-span-6">Name</div>
+                <div className="col-span-3">Date created</div>
+                <div className="col-span-2">Size</div>
                 <div className="col-span-1 text-right"></div>
               </div>
               <div className="divide-y divide-border">
@@ -275,13 +292,13 @@ const MySpace = () => {
                 <UploadCloud className="h-6 w-6 text-primary/60" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-foreground">Thư mục này trống</h3>
+            <h3 className="text-xl font-semibold text-foreground">This folder is empty</h3>
             <p className="text-muted-foreground mt-2 max-w-sm">
-              Bạn có thể tạo thư mục con mới hoặc tải tài liệu lên không gian này để bắt đầu lưu trữ.
+              You can create a new subfolder or upload documents to this space to start storing.
             </p>
             <div className="mt-6 flex gap-3">
-              <Button onClick={handleCreateFolder} className="gap-2 shadow-md">
-                <FolderPlus className="h-4 w-4" /> Tạo thư mục con
+              <Button onClick={openCreateFolderModal} className="gap-2 shadow-md">
+                <FolderPlus className="h-4 w-4" /> Create subfolder
               </Button>
             </div>
           </div>
@@ -289,9 +306,9 @@ const MySpace = () => {
           /* TRẠNG THÁI 3: CÓ DỮ LIỆU - DẠNG LIST */
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             <div className="grid grid-cols-12 px-6 py-3 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/30">
-              <div className="col-span-6">Tên</div>
-              <div className="col-span-3">Ngày tạo</div>
-              <div className="col-span-2">Kích thước</div>
+              <div className="col-span-6">Name</div>
+              <div className="col-span-3">Date created</div>
+              <div className="col-span-2">Size</div>
               <div className="col-span-1 text-right"></div>
             </div>
             <div className="divide-y divide-border">
@@ -312,10 +329,10 @@ const MySpace = () => {
                     <div className="col-span-3 text-sm text-muted-foreground select-none">{display.date}</div>
                     <div className="col-span-2 text-sm text-muted-foreground select-none">{display.size}</div>
                     <div className="col-span-1 text-right">
-                      {/* Truyền thêm onMove vào ContextMenu */}
+                      {/* Truyền hàm openRenameModal vào ContextMenu */}
                       <FileContextMenu 
                         isFolder={display.isFolder} 
-                        onRename={() => handleRename(item)} 
+                        onRename={() => openRenameModal(item)} 
                         onDownload={() => handleDownload(item)} 
                         onDelete={() => handleDelete(item)} 
                         onMove={() => {
@@ -344,10 +361,9 @@ const MySpace = () => {
                   onDoubleClick={() => handleDoubleClick(item)}
                 >
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                    {/* Truyền thêm onMove vào ContextMenu */}
                     <FileContextMenu 
                       isFolder={display.isFolder} 
-                      onRename={() => handleRename(item)} 
+                      onRename={() => openRenameModal(item)} 
                       onDownload={() => handleDownload(item)} 
                       onDelete={() => handleDelete(item)} 
                       onMove={() => {
@@ -378,13 +394,57 @@ const MySpace = () => {
         fileId={commentFileId} 
       />
 
+      {/* --- MODAL TẠO THƯ MỤC MỚI --- */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create new folder</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              placeholder="Enter folder name..." 
+              value={newFolderName} 
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submitCreateFolder()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+            <Button onClick={submitCreateFolder} disabled={!newFolderName.trim()}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- MODAL ĐỔI TÊN FILE/FOLDER --- */}
+      <Dialog open={!!renameItem} onOpenChange={(open) => !open && setRenameItem(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rename {renameItem?.kind === "folder" ? "folder" : "file"}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              placeholder="Enter new name..." 
+              value={renameValue} 
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submitRename()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameItem(null)}>Cancel</Button>
+            <Button onClick={submitRename} disabled={!renameValue.trim()}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* --- MODAL CHỌN THƯ MỤC ĐÍCH ĐỂ DI CHUYỂN --- */}
       <Dialog open={!!movingItem} onOpenChange={(open) => !open && setMovingItem(null)}>
         <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-background border-border">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-lg font-semibold flex items-center gap-2">
               <FolderOutput className="h-5 w-5 text-indigo-500" />
-              Di chuyển tới...
+              Move to...
             </DialogTitle>
           </DialogHeader>
 
@@ -412,7 +472,7 @@ const MySpace = () => {
             ) : destFolders.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                 <FolderOpen className="h-12 w-12 opacity-20 mb-2" />
-                <p className="text-sm">Không có thư mục con nào</p>
+                <p className="text-sm">No subfolders found</p>
               </div>
             ) : (
               destFolders.map((folder: any) => (
@@ -432,13 +492,13 @@ const MySpace = () => {
           {/* Nút Hành động */}
           <DialogFooter className="p-4 border-t bg-secondary/10 flex justify-between sm:justify-between items-center">
             <span className="text-xs text-muted-foreground pl-2 truncate flex-1 pr-4">
-              Đích: <strong className="text-foreground">{destPath[destPath.length - 1].name}</strong>
+              Destination: <strong className="text-foreground">{destPath[destPath.length - 1].name}</strong>
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setMovingItem(null)}>Hủy</Button>
+              <Button variant="outline" onClick={() => setMovingItem(null)}>Cancel</Button>
               <Button onClick={handleConfirmMove} disabled={isMoving} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
                 {isMoving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Di chuyển đến đây
+                Move here
               </Button>
             </div>
           </DialogFooter>

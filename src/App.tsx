@@ -35,7 +35,7 @@ const App = () => {
         try {
           await fetchProfile();
         } catch (error) {
-          console.error("Token không hợp lệ hoặc đã hết hạn", error);
+          console.error("Invalid or expired token", error);
         }
       }
       setIsInitializing(false);
@@ -49,7 +49,7 @@ const App = () => {
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium text-sm">Đang tải dữ liệu...</p>
+          <p className="text-muted-foreground font-medium text-sm">Loading data...</p>
         </div>
       </div>
     );

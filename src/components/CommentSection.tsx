@@ -39,7 +39,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
       setTotal(data.total);
     } catch (error) {
       console.error(error);
-      toast.error("Không thể tải bình luận");
+      toast.error("Unable to load comments");
     } finally {
       setIsLoading(false);
     }
@@ -59,32 +59,32 @@ export default function CommentSection({ fileId }: { fileId: string }) {
       if (editingId) {
         // ĐANG SỬA
         await commentService.updateComment(fileId, editingId, content);
-        toast.success("Đã cập nhật bình luận");
+        toast.success("Comments have been updated");
         setEditingId(null);
       } else {
         // ĐANG TẠO MỚI HOẶC TRẢ LỜI
         await commentService.createComment(fileId, content, parentId);
-        toast.success("Đã gửi bình luận");
+        toast.success("Comment has been submitted");
         if (parentId) setReplyingTo(null);
         setNewComment("");
       }
       setEditContent("");
       fetchComments(); // Tải lại danh sách
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra");
+      toast.error(error.response?.data?.message || "An error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!window.confirm("Xác nhận xóa bình luận này?")) return;
+    if (!window.confirm("Confirm deletion of this comment?")) return;
     try {
       await commentService.deleteComment(fileId, commentId);
-      toast.success("Đã xóa bình luận");
+      toast.success("Comment has been deleted");
       fetchComments();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Không thể xóa");
+      toast.error(error.response?.data?.message || "Cannot be deleted");
     }
   };
 
@@ -115,7 +115,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
         <div key={comment._id} className={`flex gap-3 mb-4 opacity-50 ${isReply ? "ml-10" : ""}`}>
           <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center"><Trash2 className="h-4 w-4" /></div>
           <div className="bg-secondary/50 rounded-lg px-4 py-2 italic text-sm text-muted-foreground border border-border/50">
-            Bình luận này đã bị xóa
+            This comment has been deleted
           </div>
         </div>
       );
@@ -139,11 +139,11 @@ export default function CommentSection({ fileId }: { fileId: string }) {
             <div className="bg-secondary/40 rounded-xl px-4 py-3 border border-border/50 shadow-sm relative">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-[13px] text-foreground">
-                  {comment.createdBy?.username || "Người dùng ẩn danh"}
+                  {comment.createdBy?.username || "Anonymous user"}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
-                  {comment.updatedAt !== comment.createdAt && " (đã sửa)"}
+                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                  {comment.updatedAt !== comment.createdAt && " (updated)"}
                 </span>
               </div>
               
@@ -156,8 +156,8 @@ export default function CommentSection({ fileId }: { fileId: string }) {
                     className="min-h-[60px] text-sm mb-2" autoFocus
                   />
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={cancelAction}>Hủy</Button>
-                    <Button size="sm" onClick={() => handleSubmit()} disabled={isSubmitting}>Lưu</Button>
+                    <Button variant="ghost" size="sm" onClick={cancelAction}>Cancel</Button>
+                    <Button size="sm" onClick={() => handleSubmit()} disabled={isSubmitting}>Save</Button>
                   </div>
                 </div>
               ) : (
@@ -174,8 +174,8 @@ export default function CommentSection({ fileId }: { fileId: string }) {
                       <button className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground"><MoreVertical className="h-4 w-4" /></button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-32">
-                      <DropdownMenuItem onClick={() => openEdit(comment)}><Pencil className="h-4 w-4 mr-2" /> Sửa</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(comment._id)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Xóa</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(comment)}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(comment._id)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -183,7 +183,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
             </div>
 
             {/* Nút Phản hồi */}
-            {!isReply && editingId !== comment._id && (
+            {editingId !== comment._id && (
               <div className="flex items-center gap-4 mt-1.5 ml-1">
                 <button 
                   onClick={() => openReply(comment._id)} 
@@ -218,7 +218,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
         )}
 
         {/* Hiển thị danh sách phản hồi (replies) */}
-        {!isReply && comment.replies?.length > 0 && (
+        {comment.replies?.length > 0 && (
           <div className="mt-2 relative">
              <div className="absolute left-[15px] top-0 bottom-4 w-px bg-border/60"></div>
              {comment.replies.map(reply => renderCommentNode(reply, true))}
@@ -235,7 +235,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
       {/* Header */}
       <div className="px-5 py-4 border-b border-border bg-secondary/20 flex items-center gap-2">
         <MessageSquare className="h-5 w-5 text-indigo-500" />
-        <h3 className="font-semibold text-foreground">Bình luận</h3>
+        <h3 className="font-semibold text-foreground">Comment</h3>
         <span className="bg-secondary text-secondary-foreground text-xs px-2 py-0.5 rounded-full font-medium ml-1">
           {total}
         </span>
@@ -246,8 +246,8 @@ export default function CommentSection({ fileId }: { fileId: string }) {
         {comments.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-60">
             <MessageSquare className="h-12 w-12 mb-3" strokeWidth={1} />
-            <p className="text-sm">Chưa có bình luận nào.</p>
-            <p className="text-xs mt-1">Hãy là người đầu tiên đưa ra ý kiến!</p>
+            <p className="text-sm">No comment yet</p>
+            <p className="text-xs mt-1">Be the first to give your opinion!</p>
           </div>
         ) : (
           comments.map(c => renderCommentNode(c))
@@ -264,7 +264,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
           </Avatar>
           <div className="flex-1 relative">
             <Textarea 
-              placeholder="Viết bình luận của bạn..." 
+              placeholder="Write your comment..." 
               className="min-h-[44px] h-[44px] resize-none pr-12 py-3 bg-secondary/30 focus-visible:bg-background transition-colors focus-visible:ring-indigo-500"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
@@ -285,7 +285,7 @@ export default function CommentSection({ fileId }: { fileId: string }) {
             </Button>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">Nhấn Enter để gửi, Shift + Enter để xuống dòng</p>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">Press Enter to submit, Shift + Enter to go to the next line</p>
       </div>
     </div>
   );

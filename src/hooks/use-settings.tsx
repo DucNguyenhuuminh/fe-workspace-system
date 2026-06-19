@@ -18,9 +18,9 @@ export const useSettings = () => {
       
       // Sau khi cập nhật thành công ở DB, gọi lại hàm fetchProfile để đồng bộ state FE
       await fetchProfile(); 
-      toast.success("Cập nhật thông tin thành công!");
+      toast.success("Information updated successfully");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Cập nhật thông tin thất bại");
+      toast.error(error.response?.data?.message || "Update failure information");
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -32,10 +32,10 @@ export const useSettings = () => {
     try {
       // Gọi API đổi mật khẩu
       // await authService.changePassword(data);
-      toast.success("Đổi mật khẩu thành công!");
+      toast.success("Password changed successfully");
       return true; // Trả về true để component biết mà reset form
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Đổi mật khẩu thất bại");
+      toast.error(error.response?.data?.message || "Password change failed");
       return false;
     } finally {
       setIsChangingPassword(false);
